@@ -70,7 +70,7 @@ const App: React.FC = () => {
   // Render Logic based on Step
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-black dark:text-white transition-colors duration-300 overflow-x-hidden">
-      {step !== 'ONBOARDING' && <Header userGoal={userGoal || undefined} onChangeGoal={changeGoal} isDarkMode={isDarkMode} toggleTheme={() => setIsDarkMode(!isDarkMode)} />}
+      <Header userGoal={userGoal || undefined} onChangeGoal={changeGoal} isDarkMode={isDarkMode} toggleTheme={() => setIsDarkMode(!isDarkMode)} />
 
       <main className="h-full">
         {step === 'ONBOARDING' && (

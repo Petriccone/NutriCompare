@@ -57,9 +57,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onSelectGoal }) => {
       </div>
 
       <div className="text-center mb-10 max-w-md relative">
-        <h1 className="text-4xl font-black text-gray-900 dark:text-white mb-2 tracking-tighter uppercase italic">
-          Nutri<span className="text-cyan-600 dark:text-cyan-400">Scan</span>
-        </h1>
         <p className="text-gray-500 dark:text-gray-400 font-mono text-xs tracking-widest">SELECIONE O PROTOCOLO DE ANÁLISE</p>
       </div>
 
