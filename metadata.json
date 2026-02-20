@@ -1,0 +1,7 @@
+{
+  "name": "NutriCompare AI",
+  "description": "Compare nutritional labels instantly using AI to make healthier choices at the supermarket.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
