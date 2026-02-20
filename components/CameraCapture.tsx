@@ -12,7 +12,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -28,7 +28,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
     setIsReady(false);
     try {
       const constraints: MediaStreamConstraints = {
-        video: { 
+        video: {
           facingMode: 'environment',
           width: { ideal: 1920 },
           height: { ideal: 1080 },
@@ -40,10 +40,10 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       handleStreamSuccess(mediaStream);
-      
+
       // Feedback visual após um breve tempo para estabilização
       setTimeout(() => setIsReady(true), 1500);
-      
+
     } catch (err) {
       console.warn("Camera access error:", err);
       setError("Não foi possível acessar a câmera de alta resolução. Verifique as permissões.");
@@ -53,8 +53,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
   const handleStreamSuccess = (mediaStream: MediaStream) => {
     setStream(mediaStream);
     if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.play().catch(e => console.error("Play error", e));
+      videoRef.current.srcObject = mediaStream;
+      videoRef.current.play().catch(e => console.error("Play error", e));
     }
   };
 
@@ -69,20 +69,20 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      
+
       // Usar a resolução real do vídeo
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       const ctx = canvas.getContext('2d');
       if (ctx) {
         // Pré-processamento leve para melhorar OCR: Aumentar contraste
         ctx.filter = 'contrast(1.1) brightness(1.05) saturate(1.1)';
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
+
         const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
         setPreview(dataUrl);
-        stopCamera(); 
+        stopCamera();
       }
     }
   };
@@ -111,10 +111,10 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
         const base64 = await fileToBase64(file);
         const previewUrl = URL.createObjectURL(file);
         onCapture({
-            id: Date.now().toString(),
-            base64,
-            mimeType: file.type,
-            previewUrl
+          id: Date.now().toString(),
+          base64,
+          mimeType: file.type,
+          previewUrl
         });
       } catch (err) {
         console.error(err);
@@ -126,88 +126,88 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
   const shadowColor = isReady ? 'shadow-[0_0_15px_#a3e635]' : '';
 
   return (
-    <div className="fixed inset-0 z-10 bg-black flex flex-col">
-      <div className="relative flex-1 bg-gray-950 overflow-hidden flex flex-col items-center justify-center">
+    <div className="fixed inset-0 z-10 bg-gray-100 dark:bg-black flex flex-col pt-16 transition-colors">
+      <div className="relative flex-1 bg-gray-200 dark:bg-gray-950 overflow-hidden flex flex-col items-center justify-center transition-colors">
         {error ? (
-            <div className="px-6 text-center animate-fade-in">
-                <div className="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-800">
-                    <AlertTriangle className="w-8 h-8 text-yellow-500" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2 font-mono">FALHA NO DISPOSITIVO</h3>
-                <p className="text-gray-400 mb-8 max-w-xs mx-auto text-sm">{error}</p>
-                <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full bg-cyan-600 py-4 rounded-xl flex items-center justify-center gap-2 font-bold"
-                >
-                    <Upload className="w-5 h-5" />
-                    USAR GALERIA
-                </button>
+          <div className="px-6 text-center animate-fade-in">
+            <div className="w-20 h-20 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 dark:border-gray-800 transition-colors">
+              <AlertTriangle className="w-8 h-8 text-yellow-500" />
             </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 font-mono transition-colors">FALHA NO DISPOSITIVO</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-xs mx-auto text-sm transition-colors">{error}</p>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-600 dark:hover:bg-cyan-700 text-white py-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors"
+            >
+              <Upload className="w-5 h-5" />
+              USAR GALERIA
+            </button>
+          </div>
         ) : preview ? (
           <img src={preview} alt="Preview" className="w-full h-full object-cover" />
         ) : (
           <>
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-            
+
             {/* HUD Overlay */}
             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-                {/* Scanner Brackets */}
-                <div className={`relative w-72 h-80 transition-colors duration-500 ${isReady ? 'text-lime-400' : 'text-cyan-500/50'}`}>
-                    {/* Corners */}
-                    <div className={`absolute top-0 left-0 w-12 h-12 border-l-4 border-t-4 rounded-tl-lg ${frameColor} ${shadowColor}`}></div>
-                    <div className={`absolute top-0 right-0 w-12 h-12 border-r-4 border-t-4 rounded-tr-lg ${frameColor} ${shadowColor}`}></div>
-                    <div className={`absolute bottom-0 left-0 w-12 h-12 border-l-4 border-b-4 rounded-bl-lg ${frameColor} ${shadowColor}`}></div>
-                    <div className={`absolute bottom-0 right-0 w-12 h-12 border-r-4 border-b-4 rounded-br-lg ${frameColor} ${shadowColor}`}></div>
-                    
-                    {/* Scanning Laser Animation */}
-                    <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-[scan_2s_ease-in-out_infinite] opacity-50"></div>
-                    
-                    {/* Focus UI Hint */}
-                    {isReady && (
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse">
-                            <div className="w-4 h-4 border border-lime-400/50 rounded-full flex items-center justify-center">
-                                <div className="w-1 h-1 bg-lime-400 rounded-full shadow-[0_0_8px_#a3e635]"></div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+              {/* Scanner Brackets */}
+              <div className={`relative w-72 h-80 transition-colors duration-500 ${isReady ? 'text-lime-400' : 'text-cyan-500/50'}`}>
+                {/* Corners */}
+                <div className={`absolute top-0 left-0 w-12 h-12 border-l-4 border-t-4 rounded-tl-lg ${frameColor} ${shadowColor}`}></div>
+                <div className={`absolute top-0 right-0 w-12 h-12 border-r-4 border-t-4 rounded-tr-lg ${frameColor} ${shadowColor}`}></div>
+                <div className={`absolute bottom-0 left-0 w-12 h-12 border-l-4 border-b-4 rounded-bl-lg ${frameColor} ${shadowColor}`}></div>
+                <div className={`absolute bottom-0 right-0 w-12 h-12 border-r-4 border-b-4 rounded-br-lg ${frameColor} ${shadowColor}`}></div>
 
-                {/* Status Message */}
-                <div className="absolute top-24 text-center">
-                     <div className={`inline-block px-4 py-1 rounded border transition-all ${isReady ? 'bg-lime-950/20 border-lime-500/30' : 'bg-black/40 border-cyan-900/30'}`}>
-                        <p className={`text-[10px] font-mono tracking-[0.2em] font-bold ${isReady ? 'text-lime-400' : 'text-cyan-400'}`}>
-                            {isReady ? 'FOCO OTIMIZADO' : label.toUpperCase()}
-                        </p>
-                     </div>
+                {/* Scanning Laser Animation */}
+                <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-[scan_2s_ease-in-out_infinite] opacity-50"></div>
+
+                {/* Focus UI Hint */}
+                {isReady && (
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse">
+                    <div className="w-4 h-4 border border-lime-400/50 rounded-full flex items-center justify-center">
+                      <div className="w-1 h-1 bg-lime-400 rounded-full shadow-[0_0_8px_#a3e635]"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Status Message */}
+              <div className="absolute top-24 text-center">
+                <div className={`inline-block px-4 py-1 rounded border transition-all ${isReady ? 'bg-lime-100/80 dark:bg-lime-950/20 border-lime-500/50 dark:border-lime-500/30' : 'bg-white/80 dark:bg-black/40 border-cyan-400/50 dark:border-cyan-900/30'}`}>
+                  <p className={`text-[10px] font-mono tracking-[0.2em] font-bold ${isReady ? 'text-lime-600 dark:text-lime-400' : 'text-cyan-600 dark:text-cyan-400'}`}>
+                    {isReady ? 'FOCO OTIMIZADO' : label.toUpperCase()}
+                  </p>
                 </div>
+              </div>
             </div>
           </>
         )}
-        
+
         <canvas ref={canvasRef} className="hidden" />
         <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
       </div>
 
       {!error && (
-          <div className="h-44 bg-black border-t border-gray-900 flex flex-col items-center justify-center px-6">
-            {!preview ? (
-                <button 
-                    onClick={takePhoto}
-                    disabled={!stream}
-                    className="w-20 h-20 rounded-full border-4 border-white/10 flex items-center justify-center active:scale-90 transition-all"
-                >
-                    <div className={`w-16 h-16 rounded-full shadow-lg transition-colors ${isReady ? 'bg-lime-500 shadow-lime-500/20' : 'bg-white'}`}></div>
-                </button>
-            ) : (
-                <div className="flex gap-4 w-full max-w-sm">
-                    <button onClick={retakePhoto} className="flex-1 py-4 rounded-xl bg-gray-900 text-white font-mono text-xs border border-gray-800">
-                        REPETIR
-                    </button>
-                    <button onClick={confirmPhoto} className="flex-1 py-4 rounded-xl bg-cyan-600 text-white font-mono text-xs font-bold border border-cyan-500">
-                        CONFIRMAR
-                    </button>
-                </div>
-            )}
+        <div className="h-44 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-900 flex flex-col items-center justify-center px-6 transition-colors">
+          {!preview ? (
+            <button
+              onClick={takePhoto}
+              disabled={!stream}
+              className="w-20 h-20 rounded-full border-4 border-gray-300 dark:border-white/10 flex items-center justify-center active:scale-90 transition-all"
+            >
+              <div className={`w-16 h-16 rounded-full shadow-lg transition-colors ${isReady ? 'bg-lime-500 shadow-lime-500/50 dark:shadow-lime-500/20' : 'bg-gray-200 dark:bg-white'}`}></div>
+            </button>
+          ) : (
+            <div className="flex gap-4 w-full max-w-sm">
+              <button onClick={retakePhoto} className="flex-1 py-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-800 text-gray-700 dark:text-white font-mono text-xs border border-gray-200 dark:border-gray-800 transition-colors">
+                REPETIR
+              </button>
+              <button onClick={confirmPhoto} className="flex-1 py-4 rounded-xl bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-600 dark:hover:bg-cyan-700 text-white font-mono text-xs font-bold border border-cyan-400 dark:border-cyan-500 transition-colors">
+                CONFIRMAR
+              </button>
+            </div>
+          )}
         </div>
       )}
 
