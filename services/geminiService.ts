@@ -1,14 +1,19 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ComparisonResult, UserGoal } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const compareNutritionLabels = async (
   base64ImageA: string,
   base64ImageB: string,
   userGoal: UserGoal
 ): Promise<ComparisonResult> => {
-  
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("VITE_GEMINI_API_KEY não encontrada nas variáveis de ambiente (.env). Certifique-se de adicioná-la com o prefixo VITE_.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+
   const goalPrompts: Record<UserGoal, string> = {
     weight_loss: "Foco total em perda de peso: priorize baixas calorias, alta saciedade (fibras/proteínas) e baixo açúcar/gordura.",
     muscle_gain: "Foco em ganho de massa muscular: priorize alto teor de proteína e qualidade dos carboidratos.",
