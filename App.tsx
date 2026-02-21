@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [imageA, setImageA] = useState<ImageFile | null>(null);
   const [imageB, setImageB] = useState<ImageFile | null>(null);
   const imageARef = useRef<ImageFile | null>(null);
+  const userGoalRef = useRef<UserGoal | null>(null);
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -27,6 +28,7 @@ const App: React.FC = () => {
 
   const handleGoalSelect = (goal: UserGoal) => {
     setUserGoal(goal);
+    userGoalRef.current = goal;
     setStep('SCAN_A');
   };
 
@@ -41,17 +43,23 @@ const App: React.FC = () => {
     setStep('ANALYZING');
 
     // Trigger analysis immediately after second capture
+    const imgA = imageARef.current;
+    const goal = userGoalRef.current;
+    console.log('handleCaptureB called. imageARef:', !!imgA, 'userGoalRef:', goal, 'imgB base64 length:', img.base64?.length);
     try {
-      if (!imageARef.current || !userGoal) throw new Error("Missing data");
-      const data = await compareNutritionLabels(imageARef.current.base64, img.base64, userGoal);
+      if (!imgA) throw new Error("Imagem A não encontrada. Reinicie e escaneie o 1º produto novamente.");
+      if (!goal) throw new Error("Objetivo não selecionado.");
+      const data = await compareNutritionLabels(imgA.base64, img.base64, goal);
       setResult(data);
       setStep('RESULT');
-    } catch (err) {
-      console.error(err);
-      setError("Falha na análise. Tente novamente.");
-      setStep('SCAN_A'); // Reset to start if fail
+    } catch (err: any) {
+      console.error('Analysis failed:', err);
+      const msg = err?.message || 'Erro desconhecido. Tente novamente.';
+      setError(`Falha na análise: ${msg}`);
+      setStep('SCAN_A');
       setImageA(null);
       setImageB(null);
+      imageARef.current = null;
     }
   };
 
@@ -66,6 +74,7 @@ const App: React.FC = () => {
 
   const changeGoal = () => {
     setUserGoal(null);
+    userGoalRef.current = null;
     reset();
     setStep('ONBOARDING');
   };
