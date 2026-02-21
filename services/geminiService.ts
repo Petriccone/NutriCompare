@@ -24,28 +24,86 @@ export const compareNutritionLabels = async (
 
   const ai = new GoogleGenAI({ apiKey });
 
-  const goalPrompts: Record<UserGoal, string> = {
-    weight_loss: "Foco total em perda de peso: priorize baixas calorias, alta saciedade (fibras/proteínas) e baixo açúcar/gordura.",
-    muscle_gain: "Foco em ganho de massa muscular: priorize alto teor de proteína e qualidade dos carboidratos.",
-    diabetes: "Foco em controle de diabetes: priorize baixo índice glicêmico (baixo açúcar, altas fibras) e baixos carboidratos simples.",
-    low_carb: "Foco em dieta Low Carb/Cetogênica: priorize o mínimo de carboidratos líquidos e gorduras saudáveis.",
-    vegan: "Foco em dieta Vegana: Verifique ingredientes. Priorize proteínas vegetais. Se algum tiver ingredientes animais, descarte-o ou alerte fortemente.",
-    general: "Foco em saúde geral: equilíbrio de nutrientes, menos processados, menor sódio."
+  const goalRules: Record<UserGoal, string> = {
+    weight_loss: `
+      OBJETIVO: PERDA DE PESO
+      PESOS DOS NUTRIENTES (do mais ao menos importante):
+      1. Calorias totais (mais importante, mas NÃO é o único critério)
+      2. Açúcares: alto açúcar = pior escolha mesmo com menos calorias
+      3. Gorduras saturadas: menos = melhor
+      4. Fibras: mais fibras = mais saciedade = melhor
+      5. Proteínas: mais proteína = melhor (preserva massa muscular)
+      6. Sódio: muito sódio causa retenção de líquidos, prejudica o emagrecimento
+      REGRA CRÍTICA: Um produto com MENOS calorias mas MUITO MAIS açúcar/sódio NÃO é melhor. Faça uma análise balanceada de todos os nutrientes.`,
+    muscle_gain: `
+      OBJETIVO: GANHO DE MASSA MUSCULAR
+      PESOS DOS NUTRIENTES (do mais ao menos importante):
+      1. Proteínas: PRIORIDADE MÁXIMA. Mais proteína por 100g = melhor
+      2. Carboidratos de qualidade: necessários para energia e recuperação muscular
+      3. Calorias: mais calorias são bem-vindas para ganho de massa
+      4. Gorduras: saudáveis são ok, saturadas em excesso são ruins
+      5. Açúcares: simples demais sem treino = acúmulo de gordura
+      REGRA CRÍTICA: Não escolha o produto com menos proteína só porque tem menos calorias. Mais calorias é DESEJÁVEL neste objetivo.`,
+    diabetes: `
+      OBJETIVO: CONTROLE DE DIABETES
+      PESOS DOS NUTRIENTES (do mais ao menos importante):
+      1. Açúcares: PRIORIDADE MÁXIMA. Menos açúcar = muito melhor
+      2. Carboidratos totais: menos = melhor (impacto glicêmico)
+      3. Fibras: mais fibras = menor índice glicêmico = muito melhor
+      4. Sódio: diabéticos têm maior risco cardiovascular, sódio importa
+      5. Gorduras saturadas: aumentam risco cardiovascular
+      REGRA CRÍTICA: Nunca escolha um produto com MORE açúcar/carboidratos simples só porque tem menos calorias. O controle glicêmico é o critério principal.`,
+    low_carb: `
+      OBJETIVO: DIETA LOW CARB / CETOGÊNICA
+      PESOS DOS NUTRIENTES (do mais ao menos importante):
+      1. Carboidratos líquidos (carbs - fibras): PRIORIDADE MÁXIMA. Menos = muito melhor
+      2. Açúcares: parte dos carbs, qualquer açúcar é terrível neste objetivo
+      3. Gorduras: gorduras saudáveis são bem-vindas (energia na cetose)
+      4. Proteínas: importantes para manutenção muscular
+      5. Calorias: secundário, o foco é carboidratos
+      REGRA CRÍTICA: Nunca escolha o produto com mais carboidratos/açúcar por ter menos calorias. Carboidratos baixos é o único critério prioritário.`,
+    vegan: `
+      OBJETIVO: DIETA VEGANA
+      CRITÉRIOS (do mais ao menos importante):
+      1. Ingredientes: verificar se contém carne, laticínios, ovos, mel, gelatina (ELIMINATÓRIO)
+      2. Proteínas vegetais: mais proteína vegetal = melhor
+      3. Vitaminas e minerais relevantes (B12, ferro, cálcio, zinco)
+      4. Processamento: menos ingredientes artificiais = melhor
+      5. Equilíbrio nutricional geral
+      REGRA CRÍTICA: Se um produto contiver ingrediente animal, ele perde automaticamente independentemente dos valores nutricionais.`,
+    general: `
+      OBJETIVO: SAÚDE GERAL
+      PESOS DOS NUTRIENTES (análise equilibrada):
+      1. Sódio: muito sódio é o sinal de alerta mais comum em alimentos processados
+      2. Açúcares: açúcar adicionado é prejudicial para a saúde geral
+      3. Gorduras saturadas: menos = melhor
+      4. Fibras: mais = melhor (saúde digestiva, glicemia)
+      5. Proteínas: mais = melhor
+      6. Calorias: considerar dentro do contexto, não como critério único
+      REGRA CRÍTICA: Faça uma análise HOLÍSTICA. Um produto com menos calorias mas cheio de sódio, açúcar e gordura NÃO é saudável. Priorize alimentos menos processados.`
   };
 
-  const specificPrompt = goalPrompts[userGoal];
+  const specificRule = goalRules[userGoal];
 
   const prompt = `
-    INSTRUÇÕES CRÍTICAS DE OCR E ANÁLISE:
-    1. Analise as tabelas nutricionais do Produto A (primeira imagem) e Produto B (segunda imagem).
-    2. CORREÇÃO DE ERROS: Corrija erros comuns de leitura (ex: 'g' lido como '9', 'O' como '0', vírgulas faltantes em decimais).
-    3. NOMENCLATURA: Use o formato: "[Categoria do Alimento] (Opção 1)" para o Produto A e "[Categoria do Alimento] (Opção 2)" para o Produto B.
-    4. COMPARAÇÃO: Baseie-se no objetivo: "${specificPrompt}".
-    5. VERDITO: Seja direto. Explique por que a opção escolhida é melhor para o objetivo "${userGoal}".
-    6. GOAL FIT: Use uma frase de impacto comparativa (ex: "Contém 40% menos sódio que a outra opção").
+    VOCÊ É UM NUTRICIONISTA ESPECIALISTA. Analise as tabelas nutricionais com rigor científico.
 
-    Retorne os dados estritamente em JSON.
+    ${specificRule}
+
+    INSTRUÇÕES OBRIGATÓRIAS:
+    1. Analise o Produto A (1ª imagem) e o Produto B (2ª imagem).
+    2. LEIA TODOS OS NUTRIENTES com atenção. Não se concentre apenas em calorias.
+    3. COMPARE cada nutriente individualmente antes de decidir o vencedor.
+    4. JUSTIFIQUE a escolha citando os nutrientes que mais pesaram na decisão.
+    5. Se um produto for claramente pior em nutrientes-chave do objetivo, mesmo tendo menos calorias, ele NÃO deve ganhar.
+    6. No campo 'verdict': seja específico, cite os números (ex: "Produto A tem 8g de açúcar vs. 18g do B").
+    7. No campo 'goalFitReason': dê uma frase de impacto com comparação numérica direta.
+    8. CORREÇÃO DE ERROS OCR: Corrija 'g' lido como '9', 'O' como '0', vírgulas faltantes.
+    9. Use no 'productName': "[Categoria] (Opção 1)" e "[Categoria] (Opção 2)".
+
+    Retorne ESTRITAMENTE em JSON.
   `;
+
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
