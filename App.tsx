@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { CameraCapture } from './components/CameraCapture';
 import { ComparisonResultView } from './components/ComparisonResult';
@@ -12,6 +12,7 @@ const App: React.FC = () => {
   const [userGoal, setUserGoal] = useState<UserGoal | null>(null);
   const [imageA, setImageA] = useState<ImageFile | null>(null);
   const [imageB, setImageB] = useState<ImageFile | null>(null);
+  const imageARef = useRef<ImageFile | null>(null);
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -31,6 +32,7 @@ const App: React.FC = () => {
 
   const handleCaptureA = (img: ImageFile) => {
     setImageA(img);
+    imageARef.current = img;
     setStep('SCAN_B');
   };
 
@@ -40,8 +42,8 @@ const App: React.FC = () => {
 
     // Trigger analysis immediately after second capture
     try {
-      if (!imageA || !userGoal) throw new Error("Missing data");
-      const data = await compareNutritionLabels(imageA.base64, img.base64, userGoal);
+      if (!imageARef.current || !userGoal) throw new Error("Missing data");
+      const data = await compareNutritionLabels(imageARef.current.base64, img.base64, userGoal);
       setResult(data);
       setStep('RESULT');
     } catch (err) {
@@ -56,6 +58,7 @@ const App: React.FC = () => {
   const reset = () => {
     setImageA(null);
     setImageB(null);
+    imageARef.current = null;
     setResult(null);
     setError(null);
     setStep('SCAN_A');
@@ -77,12 +80,19 @@ const App: React.FC = () => {
           <Onboarding onSelectGoal={handleGoalSelect} />
         )}
 
-        {(step === 'SCAN_A' || step === 'SCAN_B') && (
+        {step === 'SCAN_A' && (
           <CameraCapture
-            key="camera-scanner"
-            step={step}
-            label={step === 'SCAN_A' ? "Tire sua primeira foto para comparação" : "Agora a segunda foto"}
-            onCapture={step === 'SCAN_A' ? handleCaptureA : handleCaptureB}
+            key="scan-a"
+            label="Escaneie a tabela nutricional do 1º produto"
+            onCapture={handleCaptureA}
+          />
+        )}
+
+        {step === 'SCAN_B' && (
+          <CameraCapture
+            key="scan-b"
+            label="Agora escaneie o 2º produto"
+            onCapture={handleCaptureB}
           />
         )}
 

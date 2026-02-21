@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Camera, RefreshCw, Check, Image as ImageIcon, Upload, AlertTriangle, Scan } from 'lucide-react';
 import { ImageFile } from '../types';
 import { fileToBase64 } from '../utils/fileUtils';
@@ -6,40 +6,28 @@ import { fileToBase64 } from '../utils/fileUtils';
 interface CameraCaptureProps {
   onCapture: (image: ImageFile) => void;
   label: string;
-  step?: string;
 }
 
-export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, step }) => {
+export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
-  useEffect(() => {
-    startCamera();
-    return () => stopCamera();
+  const stopCamera = useCallback(() => {
+    setStream(prev => {
+      if (prev) {
+        prev.getTracks().forEach(track => track.stop());
+      }
+      return null;
+    });
   }, []);
 
-  // Ensure stream is attached to video element when it mounts/remounts
-  useEffect(() => {
-    if (stream && videoRef.current && !preview) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.play().catch(e => console.error("Play error", e));
-    }
-  }, [stream, preview]);
-
-  useEffect(() => {
-    if (step) {
-      setPreview(null);
-    }
-  }, [step]);
-
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     setError(null);
     setIsReady(false);
     try {
@@ -48,87 +36,54 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, 
           facingMode: 'environment',
           width: { ideal: 1920 },
           height: { ideal: 1080 },
-          // @ts-ignore - support for some browsers focus control
-          focusMode: 'continuous'
         },
         audio: false
       };
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      handleStreamSuccess(mediaStream);
+      setStream(mediaStream);
 
       // Feedback visual após um breve tempo para estabilização
       setTimeout(() => setIsReady(true), 1500);
 
     } catch (err) {
       console.warn("Camera access error:", err);
-      setError("Não foi possível acessar a câmera de alta resolução. Verifique as permissões.");
+      setError("Não foi possível acessar a câmera. Verifique as permissões.");
     }
-  };
+  }, []);
 
-  const handleStreamSuccess = (mediaStream: MediaStream) => {
-    setStream(mediaStream);
-    streamRef.current = mediaStream;
-  };
+  // Attach stream to video element
+  useEffect(() => {
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(e => console.error("Play error", e));
+    }
+  }, [stream]);
 
-  const stopCamera = () => {
-    const s = streamRef.current || stream;
-    if (s) {
-      s.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-      setStream(null);
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  };
+  useEffect(() => {
+    startCamera();
+    return () => {
+      stopCamera();
+    };
+  }, [startCamera, stopCamera]);
 
   const takePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
 
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
-      const cw = video.clientWidth;
-      const ch = video.clientHeight;
-
-      // HUD box size on screen (match tailwind w-72 h-80)
-      const cbw = 288;
-      const cbh = 320;
-
-      // Object-cover math
-      const scale = Math.max(cw / vw, ch / vh);
-      const dw = vw * scale;
-      const dh = vh * scale;
-      const dx = (dw - cw) / 2;
-      const dy = (dh - ch) / 2;
-
-      // Crop box on screen (centered)
-      const screenX = (cw - cbw) / 2;
-      const screenY = (ch - cbh) / 2;
-
-      // Map to video pixels
-      const videoX = (screenX + dx) / scale;
-      const videoY = (screenY + dy) / scale;
-      const videoW = cbw / scale;
-      const videoH = cbh / scale;
-
-      // Set canvas to 2x size for better quality
-      canvas.width = cbw * 2;
-      canvas.height = cbh * 2;
+      // Captura toda a imagem do vídeo em resolução real
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
 
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.filter = 'contrast(1.1) brightness(1.05) saturate(1.1)';
-        ctx.drawImage(
-          video,
-          videoX, videoY, videoW, videoH, // Source
-          0, 0, canvas.width, canvas.height // Destination
-        );
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
         setPreview(dataUrl);
+        stopCamera();
       }
     }
   };
@@ -147,6 +102,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, 
 
   const retakePhoto = () => {
     setPreview(null);
+    startCamera();
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -189,7 +145,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, 
             </button>
           </div>
         ) : preview ? (
-          <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+          <img src={preview} alt="Preview" className="w-full h-full object-contain bg-black" />
         ) : (
           <>
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
