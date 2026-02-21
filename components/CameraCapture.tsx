@@ -25,6 +25,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, 
     return () => stopCamera();
   }, []);
 
+  // Ensure stream is attached to video element when it mounts/remounts
+  useEffect(() => {
+    if (stream && videoRef.current && !preview) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(e => console.error("Play error", e));
+    }
+  }, [stream, preview]);
+
   useEffect(() => {
     if (step) {
       setPreview(null);
@@ -61,10 +69,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, 
   const handleStreamSuccess = (mediaStream: MediaStream) => {
     setStream(mediaStream);
     streamRef.current = mediaStream;
-    if (videoRef.current) {
-      videoRef.current.srcObject = mediaStream;
-      videoRef.current.play().catch(e => console.error("Play error", e));
-    }
   };
 
   const stopCamera = () => {
@@ -84,19 +88,47 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, 
       const video = videoRef.current;
       const canvas = canvasRef.current;
 
-      // Usar a resolução real do vídeo
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      const cw = video.clientWidth;
+      const ch = video.clientHeight;
+
+      // HUD box size on screen (match tailwind w-72 h-80)
+      const cbw = 288;
+      const cbh = 320;
+
+      // Object-cover math
+      const scale = Math.max(cw / vw, ch / vh);
+      const dw = vw * scale;
+      const dh = vh * scale;
+      const dx = (dw - cw) / 2;
+      const dy = (dh - ch) / 2;
+
+      // Crop box on screen (centered)
+      const screenX = (cw - cbw) / 2;
+      const screenY = (ch - cbh) / 2;
+
+      // Map to video pixels
+      const videoX = (screenX + dx) / scale;
+      const videoY = (screenY + dy) / scale;
+      const videoW = cbw / scale;
+      const videoH = cbh / scale;
+
+      // Set canvas to 2x size for better quality
+      canvas.width = cbw * 2;
+      canvas.height = cbh * 2;
 
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        // Pré-processamento leve para melhorar OCR: Aumentar contraste
         ctx.filter = 'contrast(1.1) brightness(1.05) saturate(1.1)';
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(
+          video,
+          videoX, videoY, videoW, videoH, // Source
+          0, 0, canvas.width, canvas.height // Destination
+        );
 
         const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
         setPreview(dataUrl);
-        // keep camera active for next scan
       }
     }
   };
