@@ -14,7 +14,7 @@ const App: React.FC = () => {
   const [imageB, setImageB] = useState<ImageFile | null>(null);
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
     if (isDarkMode) {
