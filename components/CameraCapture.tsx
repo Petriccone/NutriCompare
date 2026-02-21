@@ -6,12 +6,14 @@ import { fileToBase64 } from '../utils/fileUtils';
 interface CameraCaptureProps {
   onCapture: (image: ImageFile) => void;
   label: string;
+  step?: string;
 }
 
-export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }) => {
+export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, step }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +24,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
     startCamera();
     return () => stopCamera();
   }, []);
+
+  useEffect(() => {
+    if (step) {
+      setPreview(null);
+    }
+  }, [step]);
 
   const startCamera = async () => {
     setError(null);
@@ -52,6 +60,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
 
   const handleStreamSuccess = (mediaStream: MediaStream) => {
     setStream(mediaStream);
+    streamRef.current = mediaStream;
     if (videoRef.current) {
       videoRef.current.srcObject = mediaStream;
       videoRef.current.play().catch(e => console.error("Play error", e));
@@ -59,9 +68,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
   };
 
   const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+    const s = streamRef.current || stream;
+    if (s) {
+      s.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
       setStream(null);
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
   };
 
@@ -82,7 +96,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
 
         const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
         setPreview(dataUrl);
-        stopCamera();
+        // keep camera active for next scan
       }
     }
   };
@@ -101,7 +115,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
 
   const retakePhoto = () => {
     setPreview(null);
-    startCamera();
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

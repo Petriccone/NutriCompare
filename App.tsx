@@ -77,17 +77,12 @@ const App: React.FC = () => {
           <Onboarding onSelectGoal={handleGoalSelect} />
         )}
 
-        {step === 'SCAN_A' && (
+        {(step === 'SCAN_A' || step === 'SCAN_B') && (
           <CameraCapture
-            label="Tire sua primeira foto para comparação"
-            onCapture={handleCaptureA}
-          />
-        )}
-
-        {step === 'SCAN_B' && (
-          <CameraCapture
-            label="Agora a segunda foto"
-            onCapture={handleCaptureB}
+            key="camera-scanner"
+            step={step}
+            label={step === 'SCAN_A' ? "Tire sua primeira foto para comparação" : "Agora a segunda foto"}
+            onCapture={step === 'SCAN_A' ? handleCaptureA : handleCaptureB}
           />
         )}
 
