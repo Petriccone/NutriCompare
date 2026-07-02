@@ -84,7 +84,7 @@ function staggerClass(i: number) {
 
 export const Onboarding: React.FC<OnboardingProps> = ({ onSelect, currentGoal }) => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-20">
+    <div className="flex flex-col items-center px-4 pt-24 pb-16">
 
       {/* Heading */}
       <div className="nc-slide-up text-center mb-8 max-w-sm">

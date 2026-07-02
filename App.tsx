@@ -211,6 +211,7 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)] transition-colors duration-200 overflow-x-hidden">
       <Header
         goal={userGoal}
+        onHome={handleChangeGoal}
         onChangeGoal={handleChangeGoal}
         onOpenHistory={handleOpenHistory}
       />

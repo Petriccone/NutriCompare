@@ -5,6 +5,7 @@ import { UserGoal } from '../types';
 
 interface HeaderProps {
   goal: UserGoal | null;
+  onHome: () => void;
   onChangeGoal: () => void;
   onOpenHistory: () => void;
 }
@@ -20,6 +21,7 @@ const GOAL_LABELS: Record<UserGoal, string> = {
 
 export const Header: React.FC<HeaderProps> = ({
   goal,
+  onHome,
   onChangeGoal,
   onOpenHistory,
 }) => {
@@ -27,13 +29,18 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#FFFBEF] border-b-[3px] border-[#000]">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
 
-        {/* Wordmark — chunky black block */}
-        <div className="flex items-center gap-2 nc-box-sm bg-[#000] px-3 py-1.5 shrink-0">
+        {/* Wordmark — chunky black block, acts as Home */}
+        <button
+          type="button"
+          onClick={onHome}
+          aria-label="Início — recomeçar do zero"
+          className="nc-btn flex items-center gap-2 bg-[#000] px-3 py-1.5 shrink-0"
+        >
           <ScanLine className="w-4 h-4 text-[#FFFBEF] shrink-0" aria-hidden />
           <span className="font-mono font-bold text-sm tracking-wider text-[#FFFBEF] uppercase">
             NUTRI<span className="text-[#C6F833]">COMPARE</span>
           </span>
-        </div>
+        </button>
 
         {/* Right-side actions */}
         <div className="flex items-center gap-2">
