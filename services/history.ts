@@ -2,13 +2,27 @@ import { ComparisonResult, HistoryEntry } from '../types';
 
 const STORAGE_KEY = 'nutricompare.history.v1';
 
+/** Light structural check — rejects entries with obviously wrong shape.
+ *  Does not deep-validate ComparisonResult internals; just enough to prevent
+ *  a malformed localStorage entry from crashing History.tsx. */
+function isValidEntry(entry: unknown): entry is HistoryEntry {
+  if (!entry || typeof entry !== 'object') return false;
+  const e = entry as Record<string, unknown>;
+  if (typeof e.id !== 'string') return false;
+  if (typeof e.createdAt !== 'number') return false;
+  if (e.winner !== 'A' && e.winner !== 'B' && e.winner !== 'tie') return false;
+  if (!e.result || typeof e.result !== 'object') return false;
+  return true;
+}
+
 function readStorage(): HistoryEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed as HistoryEntry[];
+    // Filter silently — malformed entries are dropped, not thrown.
+    return parsed.filter(isValidEntry);
   } catch {
     // Corrupted data — reset silently
     return [];

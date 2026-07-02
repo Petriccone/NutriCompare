@@ -107,14 +107,17 @@ export const ScoreBreakdown: React.FC<ScoreBreakdownProps> = ({
   productAName,
   productBName,
 }) => {
-  /* Pair lines by key for robustness (in case order ever differs) */
-  const pairedLines = scoreA.lines.map(lineA => ({
-    lineA,
-    lineB: scoreB.lines.find(l => l.key === lineA.key) ?? {
-      ...lineA,
-      value: null,
-      points: 0,
-    },
+  /*
+   * Pair lines by key using whichever side has MORE lines as the base.
+   * This prevents an empty breakdown when one product is disqualified
+   * (e.g. vegan goal with animal ingredient → lines = []).
+   * The missing side gets a synthetic placeholder with value=null, points=0.
+   */
+  const baseLines =
+    scoreA.lines.length >= scoreB.lines.length ? scoreA.lines : scoreB.lines;
+  const pairedLines = baseLines.map(base => ({
+    lineA: scoreA.lines.find(l => l.key === base.key) ?? { ...base, value: null, points: 0 },
+    lineB: scoreB.lines.find(l => l.key === base.key) ?? { ...base, value: null, points: 0 },
   }));
 
   const aWinsTotal = scoreA.total > scoreB.total;
@@ -146,6 +149,31 @@ export const ScoreBreakdown: React.FC<ScoreBreakdownProps> = ({
           {productBName}
         </p>
       </div>
+
+      {/* Disqualification callouts — shown before criteria rows so the reason
+          is immediately visible even when a product has no scoring lines */}
+      {(scoreA.disqualified || scoreB.disqualified) && (
+        <div className="px-4 pt-3 flex flex-col gap-2">
+          {scoreA.disqualified && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/25 border border-rose-200 dark:border-rose-800/40">
+              <AlertOctagon className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-rose-700 dark:text-rose-400">
+                <strong>Opção A desclassificada:</strong>{' '}
+                {scoreA.disqualifyReason}
+              </p>
+            </div>
+          )}
+          {scoreB.disqualified && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/25 border border-rose-200 dark:border-rose-800/40">
+              <AlertOctagon className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-rose-700 dark:text-rose-400">
+                <strong>Opção B desclassificada:</strong>{' '}
+                {scoreB.disqualifyReason}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Criterion rows */}
       <div className="px-4">
@@ -180,30 +208,6 @@ export const ScoreBreakdown: React.FC<ScoreBreakdownProps> = ({
           <span className="text-xs text-gray-400 dark:text-gray-600 font-mono">/100</span>
         </div>
       </div>
-
-      {/* Disqualification callouts */}
-      {(scoreA.disqualified || scoreB.disqualified) && (
-        <div className="px-4 pb-4 flex flex-col gap-2">
-          {scoreA.disqualified && (
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/25 border border-rose-200 dark:border-rose-800/40">
-              <AlertOctagon className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-rose-700 dark:text-rose-400">
-                <strong>Opção A desclassificada:</strong>{' '}
-                {scoreA.disqualifyReason}
-              </p>
-            </div>
-          )}
-          {scoreB.disqualified && (
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/25 border border-rose-200 dark:border-rose-800/40">
-              <AlertOctagon className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-rose-700 dark:text-rose-400">
-                <strong>Opção B desclassificada:</strong>{' '}
-                {scoreB.disqualifyReason}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
     </Card>
   );
 };

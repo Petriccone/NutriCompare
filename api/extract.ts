@@ -6,6 +6,46 @@ import type { ExtractedProduct } from '../types';
 // Vercel serverless functions have a 4.5 MB request body cap, so this aligns.
 const MAX_BASE64_LENGTH = 6 * 1024 * 1024;
 
+// ── Rate limiter (best-effort, per-instance in-memory) ────────────────────────
+// Each serverless instance maintains its own Map, so this is a best-effort
+// guard — not a hard guarantee across parallel instances. The authoritative
+// backstop against quota abuse is a spend cap / quota ceiling set in
+// Google AI Studio. See README for the recommended production upgrade (Vercel KV).
+const RATE_LIMIT_WINDOW_MS = 60_000; // sliding window: 60 seconds
+const RATE_LIMIT_MAX = 10;           // max requests per IP per window
+
+// Map<ip, number[]> — each element is a request timestamp (epoch ms).
+const rateLimitMap = new Map<string, number[]>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+
+  // Prune timestamps outside the window.
+  const timestamps = (rateLimitMap.get(ip) ?? []).filter((t) => t > cutoff);
+
+  if (timestamps.length >= RATE_LIMIT_MAX) {
+    // Store pruned list but do NOT add this rejected request.
+    rateLimitMap.set(ip, timestamps);
+    return true; // rate-limited
+  }
+
+  timestamps.push(now);
+  rateLimitMap.set(ip, timestamps);
+
+  // Probabilistic cleanup (~5 % of requests) — removes IPs with no timestamps
+  // in the current window to prevent unbounded Map growth.
+  if (Math.random() < 0.05) {
+    for (const [key, ts] of rateLimitMap) {
+      if (ts.every((t) => t <= cutoff)) {
+        rateLimitMap.delete(key);
+      }
+    }
+  }
+
+  return false; // not rate-limited
+}
+
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -146,6 +186,20 @@ export default async function handler(
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método não permitido.' });
     return;
+  }
+
+  // Rate limit — best-effort per-instance (see module-level comment).
+  // Extract the first IP from X-Forwarded-For (set by Vercel's edge proxy).
+  const forwarded = (req.headers['x-forwarded-for'] as string | undefined) ?? '';
+  const clientIp = forwarded.split(',')[0].trim() || 'unknown';
+  try {
+    if (checkRateLimit(clientIp)) {
+      res.status(429).json({ error: 'Muitas requisições. Aguarde um instante e tente de novo.' });
+      return;
+    }
+  } catch {
+    // If the limiter itself throws for any reason, let the request through
+    // rather than blocking legitimate users — the spend cap is the real guard.
   }
 
   // Content-type guard (allow charset suffix, e.g. "application/json; charset=utf-8")

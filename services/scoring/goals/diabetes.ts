@@ -5,7 +5,8 @@ import { GoalScore, NormalizedProduct, ScoreLine } from '../../../types';
  * Ported from the diabetes EXPERT_PROFILE in geminiService.ts.
  *
  * Total possible: 100 pts
- *   Açúcar Total          30 pts (critério eliminatório — score 0 acima de 12 g)
+ *   Açúcar Total          30 pts (critério eliminatório — açúcar > 10 g/100 g
+ *                                 desqualifica o produto; pontos e linhas mantidos)
  *   Carboidratos Líquidos 25 pts (carbs - fibras)
  *   Fibras                20 pts
  *   Sódio                 15 pts
@@ -121,5 +122,15 @@ export function scoreDiabetes(p: NormalizedProduct): GoalScore {
   }
 
   const total = lines.reduce((sum, l) => sum + l.points, 0);
-  return { total, lines, disqualified: false };
+
+  // Açúcar > 10 g/100 g é contraindicado para diabéticos (critério eliminatório).
+  // Mantemos total e lines para que, quando AMBOS os produtos forem contraindicados,
+  // o menos ruim (maior total) vença — pickWinner compara totais nesse caso.
+  const sugarValue = n.sugar;
+  const disqualified = sugarValue !== null && sugarValue > 10;
+  const disqualifyReason = disqualified
+    ? `${sugarValue} g de açúcar/100 g — contraindicado para diabéticos`
+    : undefined;
+
+  return { total, lines, disqualified, disqualifyReason };
 }

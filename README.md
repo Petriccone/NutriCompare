@@ -51,3 +51,30 @@ Todos os 50 testes devem passar.
 1. Importe o repositório no dashboard do Vercel.
 2. Defina `GEMINI_API_KEY` nas variáveis de ambiente do projeto.
 3. O build é `vite build`; nenhuma configuração extra é necessária.
+
+## Segurança e proteção de cota
+
+### Teto de cota no Google AI Studio (recomendado)
+
+O endpoint `/api/extract` possui um rate limiter em memória (10 req/60 s por IP,
+por instância serverless) como primeira linha de defesa. Entretanto, **o backstop
+definitivo contra abuso financeiro é definir um teto de cota ou orçamento diretamente
+no Google AI Studio** (ou na Google Cloud Console):
+
+- Acesse **Google AI Studio → Get API Key → Manage quotas** (ou Cloud Console →
+  APIs & Services → Gemini API → Quotas & System limits).
+- Defina um limite diário de tokens ou de requisições compatível com o tráfego
+  esperado da sua aplicação.
+- Configure alertas de faturamento para ser notificado antes de atingir o teto.
+
+Isso garante que, mesmo que o rate limiter in-memory seja contornado (ex.: múltiplas
+instâncias serverless em paralelo), o custo total permaneça controlado.
+
+### Upgrade do rate limiter para produção (Vercel KV)
+
+O limitador atual é **best-effort**: cada instância serverless mantém sua própria
+memória e não sincroniza com as demais. Para um rate limit rigoroso multi-instância,
+faça o upgrade para [Vercel KV](https://vercel.com/docs/storage/vercel-kv) (Redis
+gerenciado): troque o `Map` in-memory por operações atômicas `ZADD` / `ZCOUNT` /
+`ZREMRANGEBYSCORE` na chave `ratelimit:<ip>` com TTL de 60 s. Isso garante contagem
+consistente independentemente de quantas instâncias estejam ativas.

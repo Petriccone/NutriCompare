@@ -193,6 +193,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
         mimeType: file.type,
         previewUrl,
       });
+      /*
+       * Transfer ownership of the object URL to the caller (App.tsx).
+       * Clear the ref so the unmount cleanup does NOT revoke it a second time —
+       * App.tsx will revoke it after extraction completes.
+       */
+      fileObjectUrlRef.current = null;
     } catch (_err) {
       if (isMountedRef.current) {
         setError('Não foi possível ler o arquivo. Tente novamente.');

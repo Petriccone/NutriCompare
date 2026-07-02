@@ -1,5 +1,5 @@
 import { ComparisonResult, ExtractedProduct, GoalScore, NormalizedProduct, UserGoal } from '../../types';
-import { normalize } from './normalize';
+import { normalize, normalizeRaw } from './normalize';
 import { buildVerdict } from './verdict';
 import { scoreWeightLoss } from './goals/weightLoss';
 import { scoreMuscleGain } from './goals/muscleGain';
@@ -47,8 +47,21 @@ export function compare(
   a: ExtractedProduct,
   b: ExtractedProduct,
 ): ComparisonResult {
-  const productA = normalize(a);
-  const productB = normalize(b);
+  let productA = normalize(a);
+  let productB = normalize(b);
+
+  // Spec §7 — mixed-basis guard: when exactly one product was kept at raw
+  // per-serving scale (normalizationNote set, serving size unknown), force the
+  // other to the same per-serving basis using its original `nutrition` values
+  // so both scores are expressed in the same unit before comparison.
+  const aHasNote = Boolean(productA.normalizationNote);
+  const bHasNote = Boolean(productB.normalizationNote);
+  if (aHasNote && !bHasNote) {
+    productB = normalizeRaw(b);
+  } else if (bHasNote && !aHasNote) {
+    productA = normalizeRaw(a);
+  }
+
   const scoreA = applyScore(goal, productA);
   const scoreB = applyScore(goal, productB);
   const winner = pickWinner(scoreA, scoreB);

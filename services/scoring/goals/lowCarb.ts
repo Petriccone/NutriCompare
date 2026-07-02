@@ -72,7 +72,10 @@ export function scoreLowCarb(p: NormalizedProduct): GoalScore {
     let note: string | undefined;
     if (totalFats === null) {
       note = 'Não informado';
-    } else if (totalFats > 10 && (satFats === null || totalFats === 0 || satFats / totalFats < 0.5)) {
+    // satFats === null → benefit of the doubt (ratio unknown).
+    // satFats / totalFats < 0.5 → less than half is saturated (includes satFats === 0).
+    // Dead branch `totalFats === 0` removed — unreachable under `totalFats > 10`.
+    } else if (totalFats > 10 && (satFats === null || satFats / totalFats < 0.5)) {
       pts = 15; note = 'Gordura alta, saturadas < 50% — excelente fonte de energia para cetose';
     } else if (totalFats >= 5) {
       pts = 10; note = 'Gordura moderada';

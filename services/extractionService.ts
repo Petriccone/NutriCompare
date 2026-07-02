@@ -64,6 +64,8 @@ function assertExtractedProduct(data: unknown): asserts data is ExtractedProduct
   if (typeof d.productName !== 'string') fail();
   if (typeof d.category !== 'string') fail();
   if (d.basis !== 'per_100g' && d.basis !== 'per_serving') fail();
+  // servingSizeG must be exactly null or a finite number — reject strings, booleans, etc.
+  if (d.servingSizeG !== null && typeof d.servingSizeG !== 'number') fail();
 
   if (!d.nutrition || typeof d.nutrition !== 'object') fail();
   const n = d.nutrition as Record<string, unknown>;

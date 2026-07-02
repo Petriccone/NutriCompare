@@ -118,3 +118,26 @@ export function normalize(e: ExtractedProduct): NormalizedProduct {
     normalizationNote,
   };
 }
+
+/**
+ * Forces a product onto a raw per-serving basis, keeping the original
+ * `nutrition` values unchanged (no 100/servingSizeG scaling). Used by
+ * compare() when exactly one product has an unknown serving size, so that
+ * both products are scored on the same per-serving scale (spec §7).
+ */
+export function normalizeRaw(e: ExtractedProduct): NormalizedProduct {
+  const per100g = { ...e.nutrition };
+  const carbs = per100g.carbs;
+  const fiber = per100g.fiber;
+  const netCarbs = carbs !== null ? Math.max(0, carbs - (fiber ?? 0)) : null;
+  return {
+    productName: e.productName,
+    category: e.category,
+    per100g,
+    netCarbs,
+    ingredients: e.ingredients,
+    isAnimalFree: deriveIsAnimalFree(e.ingredients),
+    normalizationNote:
+      'Tamanho da porção não informado — valores comparados por porção (não por 100 g)',
+  };
+}
