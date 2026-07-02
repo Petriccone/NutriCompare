@@ -1,85 +1,29 @@
 /* ============================================================================
-   NutriCompare v2 — Design System
-   Tokens, keyframes, utilities. Loaded globally via `import '../styles.css'`
-   in Header.tsx (Vite treats CSS imports as side-effects — one import is enough).
+   NutriCompare — DUELO POP Design System v3
+   Neo-Brutalist: thick borders, hard offset shadows, flat vivid color blocks.
+   HARD BANS enforced: no glass/blur, no gradients, no soft shadows,
+   no purple/indigo, no Inter/Space Grotesk, LIGHT is the default.
+   Imported globally via Header.tsx (one import = side-effect for all).
    ============================================================================ */
 
 /* ---------------------------------------------------------------------------
-   1. Keyframe animations
+   1. CSS Custom Properties (Tokens)
    --------------------------------------------------------------------------- */
-@keyframes nc-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+:root {
+  --bg:     #FFFBEF;   /* warm cream page background */
+  --ink:    #000000;   /* pure black — borders, shadows, primary text */
+  --lime:   #C6F833;   /* winner / positive (black text → 8.7:1 AA) */
+  --pink:   #FF7DE3;   /* playful accent (black text → 5.1:1 AA) */
+  --blue:   #2B4BF2;   /* info / secondary (white text → 6.2:1 AA) */
+  --yellow: #FFD23F;   /* badges / accents (black text → 9.7:1 AA) */
+  --red:    #FF5A47;   /* loser / bad / contraindication (black text → 6.8:1 AA) */
+  --paper2: #FFFFFF;   /* card fill that sits on cream */
 }
 
-@keyframes nc-slide-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes nc-scale-in {
-  from { opacity: 0; transform: scale(0.96); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-@keyframes nc-score-fill {
-  from { width: 0%; }
-  to   { width: var(--nc-fill-w, 0%); }
-}
-
-@keyframes nc-score-fill-rtl {
-  from { width: 0%; }
-  to   { width: var(--nc-fill-w, 0%); }
-}
-
-@keyframes nc-pulse-glow {
-  0%, 100% { opacity: 0.6; }
-  50%       { opacity: 1; }
-}
-
-@keyframes scan-line {
-  0%, 100% { transform: translateY(0); opacity: 0; }
-  15%       { opacity: 0.9; }
-  85%       { opacity: 0.9; }
-  to         { transform: translateY(320px); }
-}
+/* Dark mode removed — app is light/cream only */
 
 /* ---------------------------------------------------------------------------
-   2. Animation utility classes
-   --------------------------------------------------------------------------- */
-.nc-fade-in  { animation: nc-fade-in  0.28s ease both; }
-.nc-slide-up { animation: nc-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
-.nc-scale-in { animation: nc-scale-in 0.22s ease both; }
-
-/* Staggered entrance — add to children alongside nc-slide-up */
-.nc-stagger-1 { animation-delay: 0.04s; }
-.nc-stagger-2 { animation-delay: 0.09s; }
-.nc-stagger-3 { animation-delay: 0.14s; }
-.nc-stagger-4 { animation-delay: 0.20s; }
-.nc-stagger-5 { animation-delay: 0.26s; }
-.nc-stagger-6 { animation-delay: 0.33s; }
-
-/* Score bar — applies width animation using CSS custom property --nc-fill-w */
-.nc-score-bar {
-  animation: nc-score-fill 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: 0.15s;
-}
-
-/* ---------------------------------------------------------------------------
-   3. Glass surface utility
-   --------------------------------------------------------------------------- */
-.nc-glass {
-  background-color: rgba(255, 255, 255, 0.80);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-.dark .nc-glass {
-  background-color: rgba(8, 9, 16, 0.85);
-}
-
-/* ---------------------------------------------------------------------------
-   4. Base overrides
+   2. Base overrides
    --------------------------------------------------------------------------- */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -91,19 +35,194 @@ html {
 }
 
 body {
+  background-color: var(--bg);
+  color: var(--ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* Focus ring — override Tailwind's default with indigo brand color */
-:focus-visible {
-  outline: 2px solid #6366f1;
-  outline-offset: 2px;
-  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 /* ---------------------------------------------------------------------------
-   5. Number input — hide spin arrows
+   3. Keyframes
+   --------------------------------------------------------------------------- */
+
+/* Snappy pop-in with overshoot (cards, results) */
+@keyframes nc-pop-in {
+  0%   { opacity: 0; transform: scale(0.82); }
+  65%  { transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Winner sticker "slap" — rotated scale overshoot */
+@keyframes nc-sticker-slap {
+  0%   { opacity: 0; transform: rotate(-18deg) scale(1.5); }
+  55%  { transform: rotate(-6deg) scale(0.94); }
+  78%  { transform: rotate(-10deg) scale(1.05); }
+  100% { opacity: 1; transform: rotate(-8deg) scale(1); }
+}
+
+/* Slide up (page sections, staggered) */
+@keyframes nc-slide-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nc-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Score bar fill (left-to-right) */
+@keyframes nc-score-fill {
+  from { width: 0%; }
+  to   { width: var(--nc-fill-w, 0%); }
+}
+
+/* Big number count-up feel */
+@keyframes nc-count-up {
+  from { opacity: 0; transform: translateY(14px) scale(0.86); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Camera scan line */
+@keyframes scan {
+  0%, 100% { transform: translateY(0); opacity: 0; }
+  15%       { opacity: 1; }
+  85%       { opacity: 1; }
+  100%      { transform: translateY(320px); opacity: 0; }
+}
+
+/* ---------------------------------------------------------------------------
+   4. Animation utility classes
+   --------------------------------------------------------------------------- */
+.nc-pop-in   { animation: nc-pop-in   0.38s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.nc-fade-in  { animation: nc-fade-in  0.25s ease both; }
+.nc-slide-up { animation: nc-slide-up 0.36s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Staggered entrance — apply alongside nc-slide-up */
+.nc-stagger-1 { animation-delay: 0.04s; }
+.nc-stagger-2 { animation-delay: 0.09s; }
+.nc-stagger-3 { animation-delay: 0.14s; }
+.nc-stagger-4 { animation-delay: 0.20s; }
+.nc-stagger-5 { animation-delay: 0.26s; }
+.nc-stagger-6 { animation-delay: 0.33s; }
+
+/* Score bar fill — uses --nc-fill-w CSS var set inline */
+.nc-score-bar {
+  animation: nc-score-fill 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.15s;
+}
+
+/* Big number hero entrance */
+.nc-count-up {
+  animation: nc-count-up 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.22s;
+}
+
+/* ---------------------------------------------------------------------------
+   5. Brutalist utility classes (the 3 non-negotiables)
+   --------------------------------------------------------------------------- */
+
+/* Heavy card / block: 3px border + 6px hard shadow */
+.nc-box {
+  border: 3px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+/* Lighter card variant */
+.nc-box-sm {
+  border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+/* Interactive button: border + 4px shadow + sink-on-press */
+.nc-btn {
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.nc-btn:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+/* Already-pressed / selected state */
+.nc-btn-pressed {
+  transform: translate(4px, 4px) !important;
+  box-shadow: 0 0 0 var(--ink) !important;
+}
+
+/* "MELHOR ESCOLHA" winner sticker — lime, rotated, hard shadow, slaps in */
+.nc-sticker {
+  display: inline-block;
+  background-color: var(--lime);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  color: #000;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.3rem 0.75rem;
+  transform: rotate(-8deg);
+  animation: nc-sticker-slap 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.32s;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+/* "EVITAR" / "CONTRAINDICADO" bad tag — red, slight tilt */
+.nc-sticker-bad {
+  display: inline-block;
+  background-color: var(--red);
+  border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  color: #000;   /* black on red → 6.8:1 AA */
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.55rem;
+  transform: rotate(4deg);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+/* "EMPATE" tie badge — yellow */
+.nc-sticker-tie {
+  display: inline-block;
+  background-color: var(--yellow);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  color: #000;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.3rem 0.75rem;
+  transform: rotate(2deg);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+/* ---------------------------------------------------------------------------
+   6. Focus ring (brutalist — bright blue, no blur)
+   --------------------------------------------------------------------------- */
+:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   7. Number inputs — hide spin arrows
    --------------------------------------------------------------------------- */
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
@@ -116,9 +235,8 @@ input[type='number'] {
 }
 
 /* ---------------------------------------------------------------------------
-   6. Scrollbar — minimal styling
+   8. Scrollbar — minimal, adapts to ink color
    --------------------------------------------------------------------------- */
 ::-webkit-scrollbar        { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: #d1d5db; border-radius: 99px; }
-.dark ::-webkit-scrollbar-thumb { background: #374151; }
+::-webkit-scrollbar-thumb  { background: var(--ink); border-radius: 2px; opacity: 0.4; }

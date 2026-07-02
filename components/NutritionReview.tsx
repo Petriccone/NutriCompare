@@ -39,9 +39,9 @@ const FIELDS: FieldDef[] = [
 ];
 
 const CONFIDENCE_LABEL: Record<ExtractedProduct['confidence'], string> = {
-  high:   'Alta confiança de leitura',
-  medium: 'Confiança média — verifique os valores',
-  low:    'Baixa confiança — corrija antes de continuar',
+  high:   'Alta confiança',
+  medium: 'Confiança média — verifique',
+  low:    'Baixa confiança — corrija!',
 };
 
 const CONFIDENCE_BADGE_VARIANT: Record<
@@ -75,33 +75,31 @@ function initFields(nutrition: NutritionFacts): FieldState {
   };
 }
 
-/* Input field shared styling */
+/* Chunky bordered inputs — black border, hard focus outline */
 const inputCls = [
-  'text-sm font-mono font-bold text-right text-gray-900 dark:text-gray-100',
-  'bg-gray-50 dark:bg-gray-800/60',
-  'border border-gray-200 dark:border-gray-700 rounded-lg',
+  'text-sm font-mono font-bold text-right text-[var(--ink)]',
+  'bg-[var(--bg)]',
+  'border-[3px] border-[var(--ink)]',
   'px-2.5 py-1.5 w-24',
-  'focus:border-indigo-400 dark:focus:border-indigo-500',
-  'focus:ring-1 focus:ring-indigo-400/30 outline-none',
-  'transition-colors',
-  'placeholder:text-gray-300 dark:placeholder:text-gray-600 placeholder:font-normal',
+  'focus:outline-none focus:border-[#2B4BF2] focus:shadow-[2px_2px_0_#2B4BF2]',
+  'transition-shadow',
+  'placeholder:text-[var(--ink)] placeholder:opacity-30 placeholder:font-normal',
 ].join(' ');
 
 const textInputCls = [
-  'w-full text-sm font-semibold text-gray-900 dark:text-gray-100',
-  'bg-gray-50 dark:bg-gray-800/60',
-  'border border-gray-200 dark:border-gray-700 rounded-lg',
+  'w-full text-sm font-bold text-[var(--ink)]',
+  'bg-[var(--bg)]',
+  'border-[3px] border-[var(--ink)]',
   'px-3 py-2',
-  'focus:border-indigo-400 dark:focus:border-indigo-500',
-  'focus:ring-1 focus:ring-indigo-400/30 outline-none',
-  'transition-colors',
-  'placeholder:text-gray-400 dark:placeholder:text-gray-600',
+  'focus:outline-none focus:border-[#2B4BF2] focus:shadow-[2px_2px_0_#2B4BF2]',
+  'transition-shadow',
+  'placeholder:text-[var(--ink)] placeholder:opacity-40',
 ].join(' ');
 
 export const NutritionReview: React.FC<NutritionReviewProps> = ({
   product,
   label,
-  goal: _goal, // available for future goal-specific hints
+  goal: _goal,
   onConfirm,
   onRetake,
 }) => {
@@ -137,45 +135,48 @@ export const NutritionReview: React.FC<NutritionReviewProps> = ({
     <div className="min-h-screen pt-14 pb-28 px-4 max-w-lg mx-auto nc-fade-in">
 
       {/* Page header */}
-      <div className="mt-5 mb-4">
-        <p className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-400 dark:text-gray-500 uppercase">
-          {label}
-        </p>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-1 mb-1">
-          Revise os dados extraídos
+      <div className="mt-6 mb-5">
+        {/* Step label — ink block sticker */}
+        <div className="inline-block nc-box-sm bg-[var(--ink)] px-3 py-1 mb-3">
+          <span className="font-mono font-bold text-[10px] tracking-[0.25em] text-[var(--bg)] uppercase">
+            {label}
+          </span>
+        </div>
+        <h2 className="font-display text-3xl font-black text-[var(--ink)] leading-tight mb-1">
+          Revise os dados
         </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm font-sans text-[var(--ink)] opacity-60">
           Corrija os valores que a IA possa ter lido incorretamente.
         </p>
       </div>
 
       {/* Confidence badge */}
-      <div className="flex flex-wrap items-center gap-2 mb-3">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         <Badge variant={CONFIDENCE_BADGE_VARIANT[product.confidence]}>
           {CONFIDENCE_LABEL[product.confidence]}
         </Badge>
       </div>
 
-      {/* Warnings */}
+      {/* Warnings — bordered yellow alert */}
       {product.warnings.length > 0 && (
-        <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/25 border border-amber-200 dark:border-amber-800/40 mb-4">
+        <div className="nc-box-sm bg-[#FFD23F] p-3 mb-5">
           {product.warnings.map((w, i) => (
             <div key={i} className="flex items-start gap-2">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">{w}</p>
+              <AlertTriangle className="w-4 h-4 text-[#000] shrink-0 mt-0.5" aria-hidden />
+              <p className="text-xs font-mono font-bold text-[#000] leading-relaxed">{w}</p>
             </div>
           ))}
         </div>
       )}
 
       {/* Main form card */}
-      <Card className="mb-4">
+      <Card className="mb-5">
 
         {/* Product name */}
-        <div className="px-4 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+        <div className="px-4 pt-4 pb-3 border-b-[3px] border-[var(--ink)]">
           <label
             htmlFor="review-name"
-            className="block text-[10px] font-mono font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5"
+            className="block text-[10px] font-mono font-bold uppercase tracking-widest text-[var(--ink)] opacity-50 mb-1.5"
           >
             Nome do produto
           </label>
@@ -190,11 +191,11 @@ export const NutritionReview: React.FC<NutritionReviewProps> = ({
         </div>
 
         {/* Basis toggle + serving size */}
-        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-          <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
+        <div className="px-4 py-3 border-b-[3px] border-[var(--ink)]">
+          <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[var(--ink)] opacity-50 mb-2">
             Valores referentes a
           </p>
-          <div className="flex gap-2 mb-3">
+          <div className="flex gap-3 mb-3">
             {(['per_100g', 'per_serving'] as MeasurementBasis[]).map(b => (
               <button
                 key={b}
@@ -202,12 +203,11 @@ export const NutritionReview: React.FC<NutritionReviewProps> = ({
                 onClick={() => setBasis(b)}
                 aria-pressed={basis === b}
                 className={[
-                  'flex-1 h-9 rounded-lg',
+                  'nc-btn flex-1 h-10',
                   'text-[10px] font-mono font-bold tracking-wide uppercase',
-                  'border transition-all duration-150',
                   basis === b
-                    ? 'bg-indigo-600 dark:bg-indigo-500 text-white border-transparent'
-                    : 'bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-indigo-300',
+                    ? 'bg-[var(--ink)] text-[var(--bg)] nc-btn-pressed'
+                    : 'bg-[var(--bg)] text-[var(--ink)]',
                 ].join(' ')}
               >
                 {b === 'per_100g' ? '100 g' : 'Por porção'}
@@ -219,7 +219,7 @@ export const NutritionReview: React.FC<NutritionReviewProps> = ({
             <div className="flex items-center gap-2">
               <label
                 htmlFor="review-serving"
-                className="text-xs text-gray-500 dark:text-gray-400 shrink-0"
+                className="text-xs font-mono text-[var(--ink)] opacity-60 shrink-0"
               >
                 Tamanho da porção:
               </label>
@@ -233,7 +233,7 @@ export const NutritionReview: React.FC<NutritionReviewProps> = ({
                 min="0"
                 className={inputCls}
               />
-              <span className="text-xs text-gray-400 dark:text-gray-600">g</span>
+              <span className="text-xs font-mono text-[var(--ink)] opacity-50">g</span>
             </div>
           )}
         </div>
@@ -244,12 +244,12 @@ export const NutritionReview: React.FC<NutritionReviewProps> = ({
             <div
               key={f.key}
               className={`flex items-center justify-between py-3 ${
-                i < FIELDS.length - 1 ? 'border-b border-gray-100 dark:border-gray-800/60' : ''
+                i < FIELDS.length - 1 ? 'border-b-[2px] border-[var(--ink)] border-opacity-10' : ''
               }`}
             >
               <label
                 htmlFor={`nut-${f.key}`}
-                className="text-sm text-gray-700 dark:text-gray-300"
+                className="text-sm font-sans text-[var(--ink)]"
               >
                 {f.label}
               </label>
@@ -264,7 +264,7 @@ export const NutritionReview: React.FC<NutritionReviewProps> = ({
                   placeholder="—"
                   className={inputCls}
                 />
-                <span className="text-xs text-gray-400 dark:text-gray-600 w-7 shrink-0 text-left">
+                <span className="text-xs font-mono text-[var(--ink)] opacity-50 w-7 shrink-0">
                   {f.unit}
                 </span>
               </div>
@@ -273,27 +273,27 @@ export const NutritionReview: React.FC<NutritionReviewProps> = ({
         </div>
       </Card>
 
-      {/* Ingredients preview (read-only, reference) */}
+      {/* Ingredients preview (read-only reference) */}
       {product.ingredients.length > 0 && (
         <Card className="mb-6">
           <div className="px-4 py-3">
-            <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
+            <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[var(--ink)] opacity-50 mb-2">
               Ingredientes identificados
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            <p className="text-xs font-sans text-[var(--ink)] opacity-70 leading-relaxed">
               {product.ingredients.join(', ')}
             </p>
           </div>
         </Card>
       )}
 
-      {/* Fixed footer */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 nc-glass border-t border-gray-200/70 dark:border-gray-800/70">
+      {/* Fixed footer — brutalist bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 bg-[var(--bg)] border-t-[3px] border-[var(--ink)]">
         <div className="max-w-lg mx-auto px-4 py-3 flex gap-3">
           <Button
             variant="secondary"
             size="lg"
-            icon={<RotateCcw className="w-4 h-4" />}
+            icon={<RotateCcw className="w-4 h-4" aria-hidden />}
             onClick={onRetake}
           >
             Refazer
@@ -302,7 +302,7 @@ export const NutritionReview: React.FC<NutritionReviewProps> = ({
             variant="primary"
             size="lg"
             fullWidth
-            icon={<CheckCircle2 className="w-4 h-4" />}
+            icon={<CheckCircle2 className="w-4 h-4" aria-hidden />}
             onClick={handleConfirm}
           >
             Confirmar e continuar

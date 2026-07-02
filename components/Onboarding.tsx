@@ -7,7 +7,7 @@ import {
   Zap,
   Leaf,
   Heart,
-  CheckCircle2,
+  Check,
 } from 'lucide-react';
 
 interface OnboardingProps {
@@ -18,98 +18,91 @@ interface OnboardingProps {
 interface GoalConfig {
   id: UserGoal;
   label: string;
-  icon: React.ReactNode;
-  /** One-line description of what is optimised */
   optimize: string;
-  iconRing: string;
-  iconColor: string;
+  icon: React.ReactNode;
+  /** Button background fill — flat vivid color block */
+  bg: string;
+  /** Text color — black on light fills, white on dark fills */
+  text: string;
 }
 
+/* 2–3 accents per screen: yellow / blue / pink / lime / red / cream (neutral) */
 const GOALS: GoalConfig[] = [
   {
     id: 'weight_loss',
     label: 'Perda de peso',
-    icon: <Scale className="w-5 h-5" />,
     optimize: 'Menos calorias, mais saciedade',
-    iconRing: 'border-cyan-200 dark:border-cyan-800/50',
-    iconColor: 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400',
+    icon: <Scale className="w-5 h-5" aria-hidden />,
+    bg:   'bg-[#FFD23F]',
+    text: 'text-[#000]',
   },
   {
     id: 'muscle_gain',
     label: 'Hipertrofia',
-    icon: <Dumbbell className="w-5 h-5" />,
-    optimize: 'Mais proteína, menos gordura saturada',
-    iconRing: 'border-indigo-200 dark:border-indigo-800/50',
-    iconColor: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400',
+    optimize: 'Mais proteína, menos gord. saturada',
+    icon: <Dumbbell className="w-5 h-5" aria-hidden />,
+    bg:   'bg-[#2B4BF2]',
+    text: 'text-[#fff]',  /* white on blue → 6.2:1 AA */
   },
   {
     id: 'diabetes',
     label: 'Controle glicêmico',
-    icon: <Droplets className="w-5 h-5" />,
-    optimize: 'Menos açúcar e carboidratos simples',
-    iconRing: 'border-rose-200 dark:border-rose-800/50',
-    iconColor: 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400',
+    optimize: 'Menos açúcar e carboidratos',
+    icon: <Droplets className="w-5 h-5" aria-hidden />,
+    bg:   'bg-[#FF7DE3]',
+    text: 'text-[#000]',
   },
   {
     id: 'low_carb',
-    label: 'Low carb / Keto',
-    icon: <Zap className="w-5 h-5" />,
+    label: 'Low Carb / Keto',
     optimize: 'Carboidratos líquidos ao mínimo',
-    iconRing: 'border-amber-200 dark:border-amber-800/50',
-    iconColor: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400',
+    icon: <Zap className="w-5 h-5" aria-hidden />,
+    bg:   'bg-[#FF5A47]',
+    text: 'text-[#000]',
   },
   {
     id: 'vegan',
     label: 'Vegano',
-    icon: <Leaf className="w-5 h-5" />,
     optimize: 'Zero ingredientes de origem animal',
-    iconRing: 'border-lime-200 dark:border-lime-800/50',
-    iconColor: 'bg-lime-50 dark:bg-lime-950/40 text-lime-600 dark:text-lime-400',
+    icon: <Leaf className="w-5 h-5" aria-hidden />,
+    bg:   'bg-[#C6F833]',
+    text: 'text-[#000]',
   },
   {
     id: 'general',
     label: 'Saúde geral',
-    icon: <Heart className="w-5 h-5" />,
     optimize: 'Equilíbrio nutricional completo',
-    iconRing: 'border-pink-200 dark:border-pink-800/50',
-    iconColor: 'bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400',
+    icon: <Heart className="w-5 h-5" aria-hidden />,
+    bg:   'bg-[var(--paper2)]',
+    text: 'text-[var(--ink)]',
   },
 ];
 
-/* Stagger index cap at 6 to match nc-stagger-N classes in styles.css */
 function staggerClass(i: number) {
   return `nc-stagger-${Math.min(i + 1, 6)}`;
 }
 
 export const Onboarding: React.FC<OnboardingProps> = ({ onSelect, currentGoal }) => {
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-20 overflow-hidden">
-
-      {/* Ambient background blobs */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-[-20%] left-[-10%] w-[480px] h-[480px] rounded-full bg-indigo-100 dark:bg-indigo-950/30 blur-[110px] opacity-60 transition-colors duration-500" />
-        <div className="absolute bottom-[-15%] right-[-10%] w-[420px] h-[420px] rounded-full bg-cyan-100 dark:bg-cyan-950/20 blur-[100px] opacity-50 transition-colors duration-500" />
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-20">
 
       {/* Heading */}
-      <div className="nc-slide-up text-center mb-8 max-w-sm px-2">
-        <p className="text-[10px] font-mono font-bold tracking-[0.25em] text-gray-400 dark:text-gray-500 uppercase mb-3">
-          NUTRICOMPARE v2
-        </p>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight mb-3">
-          Qual é o seu{' '}
-          <span className="bg-gradient-to-r from-indigo-500 to-cyan-500 bg-clip-text text-transparent">
-            objetivo
+      <div className="nc-slide-up text-center mb-8 max-w-sm">
+        <div className="inline-block nc-box-sm bg-[var(--ink)] px-3 py-1 mb-4">
+          <span className="font-mono font-bold text-[10px] tracking-[0.25em] text-[var(--bg)] uppercase">
+            NUTRICOMPARE v2
           </span>
-          ?
+        </div>
+        <h1 className="font-display text-4xl font-black text-[var(--ink)] leading-tight mb-3">
+          Qual é o seu objetivo?
         </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+        <p className="text-sm font-sans text-[var(--ink)] opacity-60 leading-relaxed">
           O motor de comparação ajusta os critérios de pontuação ao seu perfil.
         </p>
       </div>
 
-      {/* Goal grid */}
-      <div className="grid grid-cols-2 gap-3 w-full max-w-md">
+      {/* Goal grid — chunky sticker buttons */}
+      <div className="grid grid-cols-2 gap-4 w-full max-w-md">
         {GOALS.map((goal, i) => {
           const isActive = currentGoal === goal.id;
           return (
@@ -120,46 +113,36 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onSelect, currentGoal })
               className={[
                 'nc-slide-up',
                 staggerClass(i),
-                'relative flex flex-col items-start gap-2.5 p-4 rounded-xl text-left',
-                'border transition-all duration-200 active:scale-[0.97]',
-                isActive
-                  ? [
-                      'bg-indigo-50 dark:bg-indigo-950/40',
-                      'border-indigo-300 dark:border-indigo-700',
-                      'shadow-[0_0_20px_rgba(99,102,241,0.14)]',
-                    ].join(' ')
-                  : [
-                      'bg-white dark:bg-gray-900',
-                      'border-gray-200 dark:border-gray-800',
-                      'hover:border-indigo-200 dark:hover:border-indigo-800',
-                      'hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_4px_16px_rgba(0,0,0,0.25)]',
-                    ].join(' '),
-              ].join(' ')}
+                'nc-btn',
+                'relative flex flex-col gap-3 p-4 text-left',
+                goal.bg,
+                goal.text,
+                isActive ? 'nc-btn-pressed' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             >
-              {/* Selected indicator */}
-              {isActive && (
-                <CheckCircle2
-                  aria-hidden
-                  className="absolute top-2.5 right-2.5 w-4 h-4 text-indigo-600 dark:text-indigo-400"
-                />
-              )}
-
-              {/* Icon */}
-              <div
-                className={`p-2 rounded-lg border ${goal.iconRing} ${goal.iconColor} transition-colors`}
-              >
+              {/* Icon in bordered circle */}
+              <div className="w-10 h-10 rounded-full border-[3px] border-[var(--ink)] flex items-center justify-center bg-[rgba(0,0,0,0.08)] shrink-0">
                 {goal.icon}
               </div>
 
               {/* Text */}
               <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight mb-0.5">
+                <p className="font-display font-black text-base leading-tight mb-0.5">
                   {goal.label}
                 </p>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">
+                <p className="text-[11px] font-mono leading-snug opacity-75">
                   {goal.optimize}
                 </p>
               </div>
+
+              {/* Selected checkmark */}
+              {isActive && (
+                <div className="absolute top-3 right-3 w-6 h-6 bg-[var(--ink)] flex items-center justify-center">
+                  <Check className="w-3.5 h-3.5 text-[var(--bg)]" aria-hidden />
+                </div>
+              )}
             </button>
           );
         })}

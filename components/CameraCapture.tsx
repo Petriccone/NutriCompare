@@ -206,36 +206,41 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
     }
   };
 
-  const frameColor = isReady ? 'border-lime-400' : 'border-cyan-500/50';
-  const shadowColor = isReady ? 'shadow-[0_0_15px_#a3e635]' : '';
+  /* ── Visual states (presentation only, logic untouched above) ─────────────── */
+  const viewfinderBorder = isReady ? 'border-[#C6F833]' : 'border-white/90';
+  const statusBg         = isReady ? 'bg-[#C6F833] text-[#000]' : 'bg-white/90 text-black';
 
   return (
-    <div className="fixed inset-0 z-10 bg-gray-100 dark:bg-black flex flex-col pt-16 transition-colors">
-      <div className="relative flex-1 bg-gray-200 dark:bg-gray-950 overflow-hidden flex flex-col items-center justify-center transition-colors">
+    <div className="fixed inset-0 z-10 bg-black flex flex-col pt-14">
+      <div className="relative flex-1 overflow-hidden flex flex-col items-center justify-center">
 
+        {/* ── Error state ──────────────────────────────────────────────────── */}
         {error ? (
           <div className="px-6 text-center">
-            <div className="w-20 h-20 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 dark:border-gray-800">
-              <AlertTriangle className="w-8 h-8 text-yellow-500" />
+            <div className="nc-box bg-[#FFD23F] w-20 h-20 flex items-center justify-center mx-auto mb-6">
+              <AlertTriangle className="w-8 h-8 text-[#000]" aria-hidden />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 font-mono">
+            <h3 className="font-display text-2xl font-black text-white mb-3">
               CÂMERA INDISPONÍVEL
             </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-xs mx-auto text-sm">
+            <p className="text-white/70 font-mono text-sm mb-8 max-w-xs mx-auto leading-relaxed">
               {error}
             </p>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors"
+              aria-label="Usar galeria de imagens"
+              className="nc-btn bg-[#C6F833] text-[#000] w-full max-w-xs py-4 flex items-center justify-center gap-2 font-mono font-bold text-sm uppercase tracking-wider"
             >
-              <Upload className="w-5 h-5" />
+              <Upload className="w-5 h-5" aria-hidden />
               USAR GALERIA
             </button>
           </div>
 
+        /* ── Photo preview ──────────────────────────────────────────────── */
         ) : preview ? (
-          <img src={preview} alt="Preview" className="w-full h-full object-contain bg-black" />
+          <img src={preview} alt="Preview da foto capturada" className="w-full h-full object-contain bg-black" />
 
+        /* ── Live viewfinder ────────────────────────────────────────────── */
         ) : (
           <>
             <video
@@ -248,43 +253,34 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
 
             {/* HUD Overlay */}
             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-              <div className="relative w-72 h-80 transition-colors duration-500">
-                {/* Corner brackets */}
-                <div className={`absolute top-0 left-0 w-12 h-12 border-l-4 border-t-4 rounded-tl-lg ${frameColor} ${shadowColor}`}></div>
-                <div className={`absolute top-0 right-0 w-12 h-12 border-r-4 border-t-4 rounded-tr-lg ${frameColor} ${shadowColor}`}></div>
-                <div className={`absolute bottom-0 left-0 w-12 h-12 border-l-4 border-b-4 rounded-bl-lg ${frameColor} ${shadowColor}`}></div>
-                <div className={`absolute bottom-0 right-0 w-12 h-12 border-r-4 border-b-4 rounded-br-lg ${frameColor} ${shadowColor}`}></div>
+              {/* Chunky bordered viewfinder frame */}
+              <div className={`relative w-72 h-80 border-[4px] transition-colors duration-500 ${viewfinderBorder}`}>
+                {/* Corner accents — bold black squares */}
+                <div className="absolute top-0 left-0 w-5 h-5 bg-white" />
+                <div className="absolute top-0 right-0 w-5 h-5 bg-white" />
+                <div className="absolute bottom-0 left-0 w-5 h-5 bg-white" />
+                <div className="absolute bottom-0 right-0 w-5 h-5 bg-white" />
 
-                {/* Scanning laser */}
-                <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-[scan_2s_ease-in-out_infinite] opacity-50"></div>
+                {/* Scan line */}
+                {!isReady && (
+                  <div
+                    className="absolute left-0 right-0 h-[3px] bg-[#C6F833] opacity-80"
+                    style={{ animation: 'scan 2.2s ease-in-out infinite' }}
+                  />
+                )}
 
+                {/* Ready indicator — lime dot */}
                 {isReady && (
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse">
-                    <div className="w-4 h-4 border border-lime-400/50 rounded-full flex items-center justify-center">
-                      <div className="w-1 h-1 bg-lime-400 rounded-full shadow-[0_0_8px_#a3e635]"></div>
-                    </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-5 h-5 bg-[#C6F833] border-[3px] border-[#000]" />
                   </div>
                 )}
               </div>
 
-              {/* Status label */}
-              <div className="absolute top-24 text-center">
-                <div
-                  className={`inline-block px-4 py-1 rounded border transition-all ${
-                    isReady
-                      ? 'bg-lime-100/80 dark:bg-lime-950/20 border-lime-500/50 dark:border-lime-500/30'
-                      : 'bg-white/80 dark:bg-black/40 border-cyan-400/50 dark:border-cyan-900/30'
-                  }`}
-                >
-                  <p
-                    className={`text-[10px] font-mono tracking-[0.2em] font-bold ${
-                      isReady
-                        ? 'text-lime-600 dark:text-lime-400'
-                        : 'text-cyan-600 dark:text-cyan-400'
-                    }`}
-                  >
-                    {isReady ? 'PRONTO PARA ESCANEAR' : label.toUpperCase()}
-                  </p>
+              {/* Status label — sticker tag below viewfinder */}
+              <div className="mt-5">
+                <div className={`border-[3px] border-[#000] px-4 py-2 font-mono font-bold text-[11px] uppercase tracking-widest shadow-[3px_3px_0_#000] ${statusBg}`}>
+                  {isReady ? '✓ PRONTO PARA ESCANEAR' : label.toUpperCase()}
                 </div>
               </div>
             </div>
@@ -301,31 +297,47 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
         />
       </div>
 
+      {/* ── Control bar ──────────────────────────────────────────────────────── */}
       {!error && (
-        <div className="h-44 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-900 flex flex-col items-center justify-center px-6 transition-colors">
+        <div className="h-44 bg-[#000] border-t-[3px] border-[#C6F833] flex flex-col items-center justify-center px-6 gap-4">
           {!preview ? (
-            <button
-              onClick={takePhoto}
-              disabled={!hasStream}
-              className="w-20 h-20 rounded-full border-4 border-gray-300 dark:border-white/10 flex items-center justify-center active:scale-90 transition-all disabled:opacity-40"
-            >
-              <div
-                className={`w-16 h-16 rounded-full shadow-lg transition-colors ${
-                  isReady ? 'bg-lime-500 shadow-lime-500/50' : 'bg-gray-300 dark:bg-gray-700'
-                }`}
-              ></div>
-            </button>
+            <div className="flex flex-col items-center gap-3">
+              {/* BIG capture button — sinks on press */}
+              <button
+                onClick={takePhoto}
+                disabled={!hasStream}
+                aria-label="Tirar foto"
+                className={[
+                  'nc-btn w-24 h-24 rounded-full flex items-center justify-center',
+                  'disabled:opacity-40 disabled:cursor-not-allowed',
+                  isReady ? 'bg-[#C6F833]' : 'bg-white/20',
+                ].join(' ')}
+              >
+                <div className={`w-16 h-16 rounded-full border-[3px] border-[var(--ink)] ${isReady ? 'bg-[#000]' : 'bg-white/40'}`} />
+              </button>
+
+              {/* Gallery shortcut */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                aria-label="Usar galeria em vez de câmera"
+                className="font-mono text-[10px] font-bold text-white/60 uppercase tracking-widest border-b border-white/30 pb-0.5 hover:text-white/90 transition-colors"
+              >
+                Usar galeria
+              </button>
+            </div>
           ) : (
             <div className="flex gap-4 w-full max-w-sm">
               <button
                 onClick={retakePhoto}
-                className="flex-1 py-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-800 text-gray-700 dark:text-white font-mono text-xs border border-gray-200 dark:border-gray-800 transition-colors"
+                aria-label="Tirar foto novamente"
+                className="nc-btn flex-1 py-4 bg-white/10 text-white font-mono text-xs font-bold uppercase tracking-widest"
               >
                 REPETIR
               </button>
               <button
                 onClick={confirmPhoto}
-                className="flex-1 py-4 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-mono text-xs font-bold border border-cyan-400 transition-colors"
+                aria-label="Confirmar foto"
+                className="nc-btn flex-1 py-4 bg-[#C6F833] text-[#000] font-mono text-xs font-bold uppercase tracking-widest"
               >
                 CONFIRMAR
               </button>
@@ -333,13 +345,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
           )}
         </div>
       )}
-
-      <style>{`
-        @keyframes scan {
-          0%, 100% { transform: translateY(0); opacity: 0; }
-          50% { transform: translateY(320px); opacity: 0.8; }
-        }
-      `}</style>
     </div>
   );
 };

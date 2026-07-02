@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
-import { Card } from './ui/Card';
 
 interface HistoryProps {
   entries: HistoryEntry[];
@@ -68,180 +67,185 @@ export const History: React.FC<HistoryProps> = ({
     <div className="min-h-screen pt-14 pb-24 px-4 max-w-lg mx-auto nc-fade-in">
 
       {/* Sub-header */}
-      <div className="flex items-center gap-2 py-4 mb-2">
+      <div className="flex items-center gap-2 py-4 mb-3">
         <button
           onClick={onBack}
           aria-label="Voltar"
-          className="p-2 -ml-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60 transition-colors"
+          className="nc-btn p-2 bg-[var(--paper2)] flex items-center justify-center -ml-1"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-5 h-5 text-[var(--ink)]" aria-hidden />
         </button>
 
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white flex-1">
+        <h1 className="font-display text-3xl font-black text-[var(--ink)] flex-1">
           Histórico
         </h1>
 
         {entries.length > 0 && (
-          <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-full border border-gray-200 dark:border-gray-700">
-            {entries.length}
-          </span>
+          <div className="nc-box-sm bg-[var(--ink)] px-2 py-0.5 flex items-center justify-center">
+            <span className="text-[10px] font-mono font-bold text-[var(--bg)]">
+              {entries.length}
+            </span>
+          </div>
         )}
       </div>
 
       {/* ── Empty state ───────────────────────────────────────────────────── */}
       {entries.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center nc-slide-up">
-          <div className="w-20 h-20 rounded-2xl bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 flex items-center justify-center mb-6">
-            <ClipboardList className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+          <div className="nc-box bg-[var(--paper2)] w-20 h-20 flex items-center justify-center mb-6">
+            <ClipboardList className="w-10 h-10 text-[var(--ink)] opacity-30" aria-hidden />
           </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-            Nenhuma comparação ainda
+          <h3 className="font-display text-2xl font-black text-[var(--ink)] mb-2">
+            Sem comparações ainda
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs leading-relaxed">
-            Suas comparações são salvas automaticamente. Faça a primeira análise
-            para vê-la aqui.
+          <p className="text-sm font-sans text-[var(--ink)] opacity-60 max-w-xs leading-relaxed">
+            Suas comparações são salvas automaticamente. Faça a primeira análise para vê-la aqui.
           </p>
           <div className="mt-8">
             <Button
               variant="primary"
               size="md"
-              icon={<ArrowLeft className="w-4 h-4" />}
+              icon={<ArrowLeft className="w-4 h-4" aria-hidden />}
               onClick={onBack}
             >
               Fazer uma comparação
             </Button>
           </div>
         </div>
+
       ) : (
         <>
-          {/* ── Entry list ──────────────────────────────────────────────── */}
-          <div className="flex flex-col gap-3">
+          {/* ── Entry list — receipt cards ─────────────────────────────── */}
+          <div className="flex flex-col gap-4">
             {entries.map((entry, i) => (
               <div
                 key={entry.id}
                 className={`nc-slide-up ${staggerClass(i)}`}
               >
-                <Card>
+                {/* Receipt card */}
+                <div className="nc-box bg-[var(--paper2)] overflow-hidden">
+                  {/* Winner accent bar at top */}
+                  <div
+                    className={`h-2 ${
+                      entry.winner === 'tie'
+                        ? 'bg-[#FFD23F]'
+                        : 'bg-[#C6F833]'
+                    }`}
+                  />
+
                   <div className="p-4">
                     {/* Date + goal */}
                     <div className="flex items-center gap-2 mb-3">
-                      <Clock className="w-3 h-3 text-gray-300 dark:text-gray-600 shrink-0" />
-                      <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500 flex-1">
+                      <Clock className="w-3 h-3 text-[var(--ink)] opacity-30 shrink-0" aria-hidden />
+                      <span className="text-[10px] font-mono text-[var(--ink)] opacity-50 flex-1">
                         {formatDate(entry.createdAt)}
                       </span>
                       <Badge variant="goal">{GOAL_LABELS[entry.goal]}</Badge>
                     </div>
 
                     {/* Products side by side */}
-                    <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 mb-3">
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 mb-4">
                       <div className="flex flex-col">
                         <span
-                          className={`text-xs font-bold truncate leading-snug ${
-                            entry.winner === 'A'
-                              ? 'text-lime-600 dark:text-lime-400'
-                              : 'text-gray-700 dark:text-gray-300'
+                          className={`text-xs font-bold font-sans truncate leading-snug ${
+                            entry.winner === 'A' ? 'text-[var(--ink)]' : 'text-[var(--ink)] opacity-50'
                           }`}
                         >
                           {entry.productAName}
                         </span>
                         {entry.winner === 'A' && (
-                          <span className="text-[9px] font-mono text-lime-500">
-                            vencedor
+                          <span className="text-[9px] font-mono text-[#000] bg-[#C6F833] px-1 mt-1 inline-block w-fit">
+                            VENCEDOR
                           </span>
                         )}
                       </div>
 
-                      <span className="text-[9px] font-mono font-bold text-gray-300 dark:text-gray-700 mt-0.5">
-                        vs
-                      </span>
+                      <div className="nc-box-sm bg-[var(--ink)] w-7 h-7 flex items-center justify-center mt-0.5">
+                        <span className="text-[8px] font-mono font-bold text-[var(--bg)]">VS</span>
+                      </div>
 
                       <div className="flex flex-col items-end">
                         <span
-                          className={`text-xs font-bold truncate leading-snug ${
-                            entry.winner === 'B'
-                              ? 'text-lime-600 dark:text-lime-400'
-                              : 'text-gray-700 dark:text-gray-300'
+                          className={`text-xs font-bold font-sans truncate leading-snug ${
+                            entry.winner === 'B' ? 'text-[var(--ink)]' : 'text-[var(--ink)] opacity-50'
                           }`}
                         >
                           {entry.productBName}
                         </span>
                         {entry.winner === 'B' && (
-                          <span className="text-[9px] font-mono text-lime-500">
-                            vencedor
+                          <span className="text-[9px] font-mono text-[#000] bg-[#C6F833] px-1 mt-1 inline-block w-fit">
+                            VENCEDOR
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Bottom row: winner badge + action buttons */}
-                    <div className="flex items-center justify-between">
+                    {/* Bottom row: outcome badge + action buttons */}
+                    <div className="flex items-center justify-between border-t-[2px] border-[var(--ink)] border-opacity-10 pt-3">
                       <div>
                         {entry.winner === 'tie' ? (
                           <Badge variant="tie">
-                            <Equal className="w-2.5 h-2.5" />
+                            <Equal className="w-2.5 h-2.5" aria-hidden />
                             Empate
                           </Badge>
                         ) : (
                           <Badge variant="winner">
-                            <Trophy className="w-2.5 h-2.5" />
-                            {entry.winner === 'A'
-                              ? entry.productAName
-                              : entry.productBName}
+                            <Trophy className="w-2.5 h-2.5" aria-hidden />
+                            {entry.winner === 'A' ? entry.productAName : entry.productBName}
                           </Badge>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-0.5">
+                      <div className="flex items-center gap-1">
                         <button
                           onClick={() => onDelete(entry.id)}
                           aria-label={`Excluir comparação entre ${entry.productAName} e ${entry.productBName}`}
-                          className="p-2 rounded-lg text-gray-400 dark:text-gray-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                          className="nc-btn p-2 bg-[var(--bg)] flex items-center justify-center"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5 text-[var(--ink)]" aria-hidden />
                         </button>
                         <button
                           onClick={() => onOpen(entry)}
                           aria-label={`Ver resultado: ${entry.productAName} vs ${entry.productBName}`}
-                          className="p-2 rounded-lg text-gray-400 dark:text-gray-600 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
+                          className="nc-btn p-2 bg-[#C6F833] flex items-center justify-center"
                         >
-                          <ExternalLink className="w-3.5 h-3.5" />
+                          <ExternalLink className="w-3.5 h-3.5 text-[#000]" aria-hidden />
                         </button>
                       </div>
                     </div>
                   </div>
-                </Card>
+                </div>
               </div>
             ))}
           </div>
 
-          {/* ── Clear all ───────────────────────────────────────────────── */}
-          <div className="mt-8 flex flex-col items-center gap-2">
+          {/* ── Clear all ────────────────────────────────────────────────── */}
+          <div className="mt-8 flex flex-col items-center gap-3">
             <button
               onClick={handleClearClick}
               className={[
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl',
+                'nc-btn flex items-center gap-2 px-5 py-2.5',
                 'text-[10px] font-mono font-bold uppercase tracking-widest',
-                'border transition-all duration-150',
                 confirmClear
-                  ? 'border-rose-400 dark:border-rose-700 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30'
-                  : 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600 hover:border-rose-300 dark:hover:border-rose-800 hover:text-rose-500 dark:hover:text-rose-500',
+                  ? 'bg-[#FF5A47] text-[#000]'
+                  : 'bg-[var(--paper2)] text-[var(--ink)]',
               ].join(' ')}
             >
               {confirmClear ? (
                 <>
-                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <AlertTriangle className="w-3.5 h-3.5" aria-hidden />
                   Confirmar — apagar tudo
                 </>
               ) : (
                 <>
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-3.5 h-3.5" aria-hidden />
                   Limpar histórico
                 </>
               )}
             </button>
 
             {confirmClear && (
-              <p className="text-[10px] text-gray-400 dark:text-gray-600 text-center">
+              <p className="text-[10px] font-mono text-[var(--ink)] opacity-50 text-center">
                 Esta ação não pode ser desfeita. Toque novamente para confirmar.
               </p>
             )}

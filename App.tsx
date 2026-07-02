@@ -23,6 +23,53 @@ import {
 } from './types';
 import { Loader2, AlertCircle } from 'lucide-react';
 
+// ── DEV-ONLY: Mock result for visual preview at #preview-result ─────────────
+const PREVIEW_MOCK: ComparisonResult = {
+  goal: 'vegan',
+  productA: {
+    productName: 'Proteína Vegetal Mix',
+    category: 'Suplemento',
+    per100g: {
+      calories: 380, protein: 72, carbs: 14, sugar: 4,
+      fats: 5, saturatedFats: 1, fiber: 6, sodium: 320,
+    },
+    netCarbs: 8,
+    ingredients: ['proteína de ervilha', 'proteína de arroz', 'cacau em pó', 'estévia'],
+    isAnimalFree: true,
+  },
+  productB: {
+    productName: 'Whey Protein Clássico',
+    category: 'Suplemento',
+    per100g: {
+      calories: 385, protein: 78, carbs: 8, sugar: 3,
+      fats: 4, saturatedFats: 2, fiber: 2, sodium: 280,
+    },
+    netCarbs: 6,
+    ingredients: ['concentrado de proteína do soro do leite', 'cacau em pó', 'sucralose'],
+    isAnimalFree: false,
+  },
+  scoreA: {
+    total: 81,
+    disqualified: false,
+    lines: [
+      { key: 'protein',       label: 'Proteínas',        value: 72, unit: 'g',    points: 25, maxPoints: 30, note: 'excelente' },
+      { key: 'fiber',         label: 'Fibras',            value: 6,  unit: 'g',    points: 20, maxPoints: 20 },
+      { key: 'sugar',         label: 'Açúcares',          value: 4,  unit: 'g',    points: 18, maxPoints: 20 },
+      { key: 'saturatedFats', label: 'Gord. saturadas',   value: 1,  unit: 'g',    points: 18, maxPoints: 30 },
+    ],
+  },
+  scoreB: {
+    total: 0,
+    disqualified: true,
+    disqualifyReason: 'Contém ingrediente de origem animal (soro do leite)',
+    lines: [],
+  },
+  winner: 'A',
+  verdict: 'Proteína Vegetal Mix vence por padrão: o Whey Protein foi desclassificado por conter soro do leite, ingrediente de origem animal, incompatível com o objetivo vegano. A opção vegetal entrega 72g de proteína por 100g com 6g de fibras e apenas 4g de açúcar.',
+  keyReason: 'Whey desclassificado — proteína 100% vegetal vence!',
+  createdAt: Date.now() - 86400000,
+};
+
 const App: React.FC = () => {
   const [step, setStep] = useState<AppStep>('ONBOARDING');
   const [userGoal, setUserGoal] = useState<UserGoal | null>(null);
@@ -31,22 +78,12 @@ const App: React.FC = () => {
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   // Load history once on mount
   useEffect(() => {
     setHistory(listHistory());
   }, []);
-
-  // Keep <html> class in sync with dark mode state
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
 
   // ── Goal selection ──────────────────────────────────────────────────────────
   const handleGoalSelect = (goal: UserGoal) => {
@@ -164,12 +201,16 @@ const App: React.FC = () => {
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────
+
+  // DEV-ONLY: visual preview of ComparisonResult without camera/API
+  if (import.meta.env.DEV && typeof window !== 'undefined' && window.location.hash === '#preview-result') {
+    return <ComparisonResultView result={PREVIEW_MOCK} onReset={() => {}} onOpenHistory={() => {}} />;
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-white transition-colors duration-300 overflow-x-hidden">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)] transition-colors duration-200 overflow-x-hidden">
       <Header
         goal={userGoal}
-        isDark={isDarkMode}
-        onToggleTheme={() => setIsDarkMode(d => !d)}
         onChangeGoal={handleChangeGoal}
         onOpenHistory={handleOpenHistory}
       />
@@ -195,12 +236,14 @@ const App: React.FC = () => {
 
         {/* Extraction loading overlay */}
         {isExtracting && (
-          <div className="fixed inset-0 bg-white dark:bg-gray-950 z-50 flex flex-col items-center justify-center p-4">
-            <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
-            <h2 className="text-lg font-bold font-mono text-gray-900 dark:text-white">
+          <div className="fixed inset-0 bg-[var(--bg)] z-50 flex flex-col items-center justify-center p-4">
+            <div className="nc-box-sm bg-[#C6F833] p-6 mb-6 flex items-center justify-center">
+              <Loader2 className="w-12 h-12 text-[#000] animate-spin" />
+            </div>
+            <h2 className="font-display text-2xl font-black text-[var(--ink)] tracking-tight">
               ANALISANDO RÓTULO...
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
+            <p className="text-sm font-mono text-[var(--ink)] opacity-60 mt-2 text-center">
               Isso pode levar alguns segundos
             </p>
           </div>
@@ -251,13 +294,13 @@ const App: React.FC = () => {
 
       {/* Non-blocking error toast */}
       {error && (
-        <div className="fixed bottom-10 left-4 right-4 bg-red-900/90 border border-red-500 text-white p-4 rounded-xl flex items-center gap-3 shadow-2xl z-50">
-          <AlertCircle className="w-6 h-6 shrink-0" />
-          <span className="flex-1 text-sm">{error}</span>
+        <div className="fixed bottom-10 left-4 right-4 nc-box bg-[#FF5A47] p-4 flex items-center gap-3 z-50">
+          <AlertCircle className="w-5 h-5 shrink-0 text-[#000]" aria-hidden />
+          <span className="flex-1 text-sm font-mono font-bold text-[#000]">{error}</span>
           <button
             onClick={() => setError(null)}
             aria-label="Fechar erro"
-            className="ml-2 font-bold text-red-300 hover:text-white transition-colors"
+            className="ml-2 font-mono font-bold text-[#000] hover:opacity-70 transition-opacity"
           >
             ✕
           </button>
