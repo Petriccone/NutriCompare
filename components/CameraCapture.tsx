@@ -10,6 +10,8 @@ interface CameraCaptureProps {
 
 const CAMERA_START_DELAY_MS = 400;
 const MAX_RETRIES = 2;
+/** Cap the longest canvas side to limit base64 payload size. */
+const MAX_CANVAS_SIDE = 1200;
 
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -17,17 +19,29 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const isMountedRef = useRef(true);
+  /** Stores the id of the "camera ready" setTimeout so we can cancel it. */
+  const readyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Tracks any object URL created during file upload so it can be revoked. */
+  const fileObjectUrlRef = useRef<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [hasStream, setHasStream] = useState(false);
 
+  const clearReadyTimer = useCallback(() => {
+    if (readyTimerRef.current !== null) {
+      clearTimeout(readyTimerRef.current);
+      readyTimerRef.current = null;
+    }
+  }, []);
+
   const stopCamera = useCallback(() => {
+    clearReadyTimer();
     const s = streamRef.current;
     if (s) {
       s.getTracks().forEach(track => {
-        try { track.stop(); } catch (_) { }
+        try { track.stop(); } catch (_) {}
       });
       streamRef.current = null;
     }
@@ -37,16 +51,17 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
     if (isMountedRef.current) {
       setHasStream(false);
     }
-  }, []);
+  }, [clearReadyTimer]);
 
   const startCamera = useCallback(async (retry = 0) => {
     if (!isMountedRef.current) return;
+    // Cancel any pending "ready" timer from a previous start attempt
+    clearReadyTimer();
     setError(null);
     setIsReady(false);
 
-    // Small delay so previous camera release has time to propagate to OS
+    // Small delay so previous camera release can propagate to the OS
     await new Promise(r => setTimeout(r, CAMERA_START_DELAY_MS));
-
     if (!isMountedRef.current) return;
 
     try {
@@ -56,7 +71,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
-        audio: false
+        audio: false,
       };
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -71,35 +86,39 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        await videoRef.current.play().catch(e => console.warn('Play error:', e));
+        await videoRef.current.play().catch(() => {});
       }
 
-      setTimeout(() => {
+      // Schedule "ready" state — store the timer id so it can be cancelled
+      readyTimerRef.current = setTimeout(() => {
         if (isMountedRef.current) setIsReady(true);
       }, 1500);
 
-    } catch (err: any) {
-      console.warn(`Camera error (attempt ${retry + 1}):`, err?.name, err?.message);
-
+    } catch (err: unknown) {
       if (retry < MAX_RETRIES && isMountedRef.current) {
-        console.log(`Retrying camera in 600ms... (attempt ${retry + 2}/${MAX_RETRIES + 1})`);
         await new Promise(r => setTimeout(r, 600));
         return startCamera(retry + 1);
       }
-
       if (isMountedRef.current) {
-        setError("Não foi possível acessar a câmera. Toque em 'Usar Galeria' ou verifique as permissões.");
+        setError(
+          "Não foi possível acessar a câmera. Toque em 'Usar Galeria' ou verifique as permissões.",
+        );
       }
     }
-  }, []);
+  }, [clearReadyTimer]);
 
-  // On mount: start camera. On unmount: cleanup.
+  // Mount: start camera. Unmount: cancel timers, stop stream, revoke object URLs.
   useEffect(() => {
     isMountedRef.current = true;
     startCamera();
     return () => {
       isMountedRef.current = false;
+      clearReadyTimer();
       stopCamera();
+      if (fileObjectUrlRef.current) {
+        URL.revokeObjectURL(fileObjectUrlRef.current);
+        fileObjectUrlRef.current = null;
+      }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -107,40 +126,45 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
-    if (video.videoWidth === 0 || video.videoHeight === 0) {
-      console.warn('Video not ready yet');
-      return;
+    if (video.videoWidth === 0 || video.videoHeight === 0) return;
+
+    // Downscale if needed to keep the base64 payload reasonable
+    let w = video.videoWidth;
+    let h = video.videoHeight;
+    if (w > MAX_CANVAS_SIDE || h > MAX_CANVAS_SIDE) {
+      const scale = MAX_CANVAS_SIDE / Math.max(w, h);
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
     }
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     ctx.filter = 'contrast(1.1) brightness(1.05)';
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, 0, 0, w, h);
 
-    // Lower quality (0.80) = much smaller base64, still great for OCR
     const dataUrl = canvas.toDataURL('image/jpeg', 0.80);
-    console.log(`📸 Photo captured: ${Math.round(dataUrl.length / 1024)}KB base64`);
     setPreview(dataUrl);
     stopCamera();
   };
 
   const confirmPhoto = () => {
     if (!preview) return;
-    const base64 = preview.split(',')[1];
-    if (!base64 || base64.length < 100) {
-      console.error('base64 is empty or too short!');
+    const parts = preview.split(',');
+    if (parts.length < 2 || !parts[1] || parts[1].length < 100) {
+      // Show error instead of silently dropping the confirmation
+      setError('Foto inválida ou corrompida. Tente novamente.');
+      setPreview(null);
+      startCamera();
       return;
     }
-    console.log(`✅ Confirming photo, base64 size: ${Math.round(base64.length / 1024)}KB`);
     onCapture({
       id: Date.now().toString(),
-      base64,
+      base64: parts[1],
       mimeType: 'image/jpeg',
-      previewUrl: preview
+      previewUrl: preview,
     });
   };
 
@@ -154,15 +178,31 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
     if (!file) return;
     try {
       const base64 = await fileToBase64(file);
+      if (!isMountedRef.current) return;
+
+      // Revoke any previously created object URL before making a new one
+      if (fileObjectUrlRef.current) {
+        URL.revokeObjectURL(fileObjectUrlRef.current);
+      }
       const previewUrl = URL.createObjectURL(file);
+      fileObjectUrlRef.current = previewUrl;
+
       onCapture({
         id: Date.now().toString(),
         base64,
         mimeType: file.type,
-        previewUrl
+        previewUrl,
       });
-    } catch (err) {
-      console.error('File upload error:', err);
+      /*
+       * Transfer ownership of the object URL to the caller (App.tsx).
+       * Clear the ref so the unmount cleanup does NOT revoke it a second time —
+       * App.tsx will revoke it after extraction completes.
+       */
+      fileObjectUrlRef.current = null;
+    } catch (_err) {
+      if (isMountedRef.current) {
+        setError('Não foi possível ler o arquivo. Tente novamente.');
+      }
     }
   };
 
@@ -178,8 +218,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
             <div className="w-20 h-20 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-6 border border-gray-200 dark:border-gray-800">
               <AlertTriangle className="w-8 h-8 text-yellow-500" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 font-mono">CÂMERA INDISPONÍVEL</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-xs mx-auto text-sm">{error}</p>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 font-mono">
+              CÂMERA INDISPONÍVEL
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-xs mx-auto text-sm">
+              {error}
+            </p>
             <button
               onClick={() => fileInputRef.current?.click()}
               className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors"
@@ -204,8 +248,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
 
             {/* HUD Overlay */}
             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-              <div className={`relative w-72 h-80 transition-colors duration-500`}>
-                {/* Corners */}
+              <div className="relative w-72 h-80 transition-colors duration-500">
+                {/* Corner brackets */}
                 <div className={`absolute top-0 left-0 w-12 h-12 border-l-4 border-t-4 rounded-tl-lg ${frameColor} ${shadowColor}`}></div>
                 <div className={`absolute top-0 right-0 w-12 h-12 border-r-4 border-t-4 rounded-tr-lg ${frameColor} ${shadowColor}`}></div>
                 <div className={`absolute bottom-0 left-0 w-12 h-12 border-l-4 border-b-4 rounded-bl-lg ${frameColor} ${shadowColor}`}></div>
@@ -225,10 +269,20 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
 
               {/* Status label */}
               <div className="absolute top-24 text-center">
-                <div className={`inline-block px-4 py-1 rounded border transition-all ${isReady
-                  ? 'bg-lime-100/80 dark:bg-lime-950/20 border-lime-500/50 dark:border-lime-500/30'
-                  : 'bg-white/80 dark:bg-black/40 border-cyan-400/50 dark:border-cyan-900/30'}`}>
-                  <p className={`text-[10px] font-mono tracking-[0.2em] font-bold ${isReady ? 'text-lime-600 dark:text-lime-400' : 'text-cyan-600 dark:text-cyan-400'}`}>
+                <div
+                  className={`inline-block px-4 py-1 rounded border transition-all ${
+                    isReady
+                      ? 'bg-lime-100/80 dark:bg-lime-950/20 border-lime-500/50 dark:border-lime-500/30'
+                      : 'bg-white/80 dark:bg-black/40 border-cyan-400/50 dark:border-cyan-900/30'
+                  }`}
+                >
+                  <p
+                    className={`text-[10px] font-mono tracking-[0.2em] font-bold ${
+                      isReady
+                        ? 'text-lime-600 dark:text-lime-400'
+                        : 'text-cyan-600 dark:text-cyan-400'
+                    }`}
+                  >
                     {isReady ? 'PRONTO PARA ESCANEAR' : label.toUpperCase()}
                   </p>
                 </div>
@@ -238,7 +292,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
         )}
 
         <canvas ref={canvasRef} className="hidden" />
-        <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+        />
       </div>
 
       {!error && (
@@ -249,7 +309,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label }
               disabled={!hasStream}
               className="w-20 h-20 rounded-full border-4 border-gray-300 dark:border-white/10 flex items-center justify-center active:scale-90 transition-all disabled:opacity-40"
             >
-              <div className={`w-16 h-16 rounded-full shadow-lg transition-colors ${isReady ? 'bg-lime-500 shadow-lime-500/50' : 'bg-gray-300 dark:bg-gray-700'}`}></div>
+              <div
+                className={`w-16 h-16 rounded-full shadow-lg transition-colors ${
+                  isReady ? 'bg-lime-500 shadow-lime-500/50' : 'bg-gray-300 dark:bg-gray-700'
+                }`}
+              ></div>
             </button>
           ) : (
             <div className="flex gap-4 w-full max-w-sm">
