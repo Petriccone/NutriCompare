@@ -1,0 +1,124 @@
+/* ============================================================================
+   NutriCompare v2 — Design System
+   Tokens, keyframes, utilities. Loaded globally via `import '../styles.css'`
+   in Header.tsx (Vite treats CSS imports as side-effects — one import is enough).
+   ============================================================================ */
+
+/* ---------------------------------------------------------------------------
+   1. Keyframe animations
+   --------------------------------------------------------------------------- */
+@keyframes nc-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes nc-slide-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nc-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes nc-score-fill {
+  from { width: 0%; }
+  to   { width: var(--nc-fill-w, 0%); }
+}
+
+@keyframes nc-score-fill-rtl {
+  from { width: 0%; }
+  to   { width: var(--nc-fill-w, 0%); }
+}
+
+@keyframes nc-pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+
+@keyframes scan-line {
+  0%, 100% { transform: translateY(0); opacity: 0; }
+  15%       { opacity: 0.9; }
+  85%       { opacity: 0.9; }
+  to         { transform: translateY(320px); }
+}
+
+/* ---------------------------------------------------------------------------
+   2. Animation utility classes
+   --------------------------------------------------------------------------- */
+.nc-fade-in  { animation: nc-fade-in  0.28s ease both; }
+.nc-slide-up { animation: nc-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.nc-scale-in { animation: nc-scale-in 0.22s ease both; }
+
+/* Staggered entrance — add to children alongside nc-slide-up */
+.nc-stagger-1 { animation-delay: 0.04s; }
+.nc-stagger-2 { animation-delay: 0.09s; }
+.nc-stagger-3 { animation-delay: 0.14s; }
+.nc-stagger-4 { animation-delay: 0.20s; }
+.nc-stagger-5 { animation-delay: 0.26s; }
+.nc-stagger-6 { animation-delay: 0.33s; }
+
+/* Score bar — applies width animation using CSS custom property --nc-fill-w */
+.nc-score-bar {
+  animation: nc-score-fill 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.15s;
+}
+
+/* ---------------------------------------------------------------------------
+   3. Glass surface utility
+   --------------------------------------------------------------------------- */
+.nc-glass {
+  background-color: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.dark .nc-glass {
+  background-color: rgba(8, 9, 16, 0.85);
+}
+
+/* ---------------------------------------------------------------------------
+   4. Base overrides
+   --------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus ring — override Tailwind's default with indigo brand color */
+:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------------------------------------------------------------------------
+   5. Number input — hide spin arrows
+   --------------------------------------------------------------------------- */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ---------------------------------------------------------------------------
+   6. Scrollbar — minimal styling
+   --------------------------------------------------------------------------- */
+::-webkit-scrollbar        { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: #d1d5db; border-radius: 99px; }
+.dark ::-webkit-scrollbar-thumb { background: #374151; }
