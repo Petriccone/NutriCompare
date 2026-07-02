@@ -84,15 +84,10 @@ function staggerClass(i: number) {
 
 export const Onboarding: React.FC<OnboardingProps> = ({ onSelect, currentGoal }) => {
   return (
-    <div className="flex flex-col items-center px-4 pt-24 pb-16">
+    <div className="min-h-[calc(100svh-3.5rem)] mt-14 flex flex-col items-center justify-center px-4 py-8">
 
       {/* Heading */}
       <div className="nc-slide-up text-center mb-8 max-w-sm">
-        <div className="inline-block nc-box-sm bg-[var(--ink)] px-3 py-1 mb-4">
-          <span className="font-mono font-bold text-[10px] tracking-[0.25em] text-[var(--bg)] uppercase">
-            NUTRICOMPARE v2
-          </span>
-        </div>
         <h1 className="font-display text-4xl font-black text-[var(--ink)] leading-tight mb-3">
           Qual é o seu objetivo?
         </h1>
