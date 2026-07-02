@@ -54,11 +54,14 @@ export function compare(
   // per-serving scale (normalizationNote set, serving size unknown), force the
   // other to the same per-serving basis using its original `nutrition` values
   // so both scores are expressed in the same unit before comparison.
+  // Only force the counterpart to raw per-serving when it is actually a
+  // per_serving product; a per_100g product already carries the correct basis,
+  // so re-stamping it with a "comparado por porção" note would be misleading.
   const aHasNote = Boolean(productA.normalizationNote);
   const bHasNote = Boolean(productB.normalizationNote);
-  if (aHasNote && !bHasNote) {
+  if (aHasNote && !bHasNote && b.basis === 'per_serving') {
     productB = normalizeRaw(b);
-  } else if (bHasNote && !aHasNote) {
+  } else if (bHasNote && !aHasNote && a.basis === 'per_serving') {
     productA = normalizeRaw(a);
   }
 
